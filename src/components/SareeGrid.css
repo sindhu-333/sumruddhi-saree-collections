@@ -1,0 +1,48 @@
+.saree-grid-section {
+  padding: clamp(2.5rem, 5vw, 4.5rem) 1rem;
+}
+
+.grid-header {
+  width: min(100%, 1440px);
+  margin: 0 auto 1.5rem;
+  text-align: center;
+}
+
+.grid-title { font-size: clamp(2rem, 3.5vw, 3.2rem); }
+
+.grid-subtitle { font-size: 0.95rem; }
+
+.saree-grid {
+  width: min(100%, 1440px);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.grid-item {
+  display: flex;
+  animation: floatIn 520ms ease both;
+}
+
+.empty-state {
+  width: min(100%, 700px);
+  margin: 0 auto;
+  padding: 3rem 1.2rem;
+  text-align: center;
+  color: var(--ink-soft);
+  border-radius: 28px;
+  background: rgba(255,255,255,0.72);
+  border: 1px dashed rgba(191,135,67,0.22);
+}
+
+body.theme-dark .empty-state {
+  background: linear-gradient(180deg, rgba(15, 20, 32, 0.96), rgba(9, 12, 18, 0.98));
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--white);
+}
+
+@media (max-width: 640px) {
+  .saree-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

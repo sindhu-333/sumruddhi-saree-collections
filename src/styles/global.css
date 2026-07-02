@@ -1,0 +1,166 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+img, video { max-width: 100%; display: block; }
+
+input, button, textarea, select { font: inherit; }
+
+p { line-height: 1.72; }
+
+.text-muted { color: var(--warm-gray); font-size: 13px; }
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold-deep);
+  margin-bottom: 10px;
+}
+
+.eyebrow::before {
+  content: '';
+  width: 18px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.65;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+}
+
+main {
+  flex: 1;
+}
+
+.section-card,
+.admin-section-card,
+.admin-panel-page-card,
+.orders-panel,
+.verification-panel,
+.collection-manager-card,
+.profile-form,
+.profile-display,
+.modal-card,
+.payment-modal,
+.policy-modal,
+.cart-panel,
+.saree-card,
+.return-card,
+.return-form-card,
+.admin-returns-hero,
+.notice-banner,
+.hero-image,
+.collection-image-wrapper,
+.saree-image-container {
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.surface,
+.section-card,
+.admin-section-card,
+.admin-panel-page-card,
+.orders-panel,
+.verification-panel,
+.collection-manager-card,
+.profile-form,
+.profile-display,
+.modal-card,
+.payment-modal,
+.policy-modal,
+.cart-panel,
+.return-card,
+.return-form-card,
+.admin-returns-hero {
+  background: linear-gradient(180deg, rgba(255,255,255,0.88), rgba(255,255,255,0.74));
+  backdrop-filter: blur(18px) saturate(160%);
+}
+
+.surface-strong,
+body.theme-dark .surface,
+body.theme-dark .section-card,
+body.theme-dark .admin-section-card,
+body.theme-dark .admin-panel-page-card,
+body.theme-dark .orders-panel,
+body.theme-dark .verification-panel,
+body.theme-dark .collection-manager-card,
+body.theme-dark .profile-form,
+body.theme-dark .profile-display,
+body.theme-dark .modal-card,
+body.theme-dark .payment-modal,
+body.theme-dark .policy-modal,
+body.theme-dark .cart-panel,
+body.theme-dark .return-card,
+body.theme-dark .return-form-card,
+body.theme-dark .admin-returns-hero {
+  background: linear-gradient(180deg, rgba(15,20,32,0.92), rgba(15,20,32,0.84));
+  color: var(--ink);
+}
+
+.text-strong {
+  color: var(--ink);
+}
+
+body.theme-dark .text-strong,
+body.theme-dark .surface-strong .text-strong {
+  color: var(--white);
+}
+
+body.theme-dark .text-muted {
+  color: var(--ink-faint);
+}
+
+body.theme-dark .eyebrow {
+  color: var(--accent-light);
+}
+
+body.theme-dark .image-dropzone,
+body.theme-dark .file-upload-area,
+body.theme-dark .qr-container,
+body.theme-dark .upi-details,
+body.theme-dark .decision-note,
+body.theme-dark .return-form-note,
+body.theme-dark .auth-note,
+body.theme-dark .notice-banner {
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.04));
+  border-color: rgba(255,255,255,0.1);
+  color: var(--white);
+}
+
+body.theme-dark .image-dropzone p,
+body.theme-dark .file-upload-area p,
+body.theme-dark .qr-container p,
+body.theme-dark .upi-details p,
+body.theme-dark .decision-note p,
+body.theme-dark .return-form-note p,
+body.theme-dark .auth-note p,
+body.theme-dark .notice-banner {
+  color: var(--white);
+}
+
+body.theme-dark .surface,
+body.theme-dark .section-card,
+body.theme-dark .admin-section-card,
+body.theme-dark .admin-panel-page-card,
+body.theme-dark .orders-panel,
+body.theme-dark .verification-panel,
+body.theme-dark .collection-manager-card,
+body.theme-dark .profile-form,
+body.theme-dark .profile-display,
+body.theme-dark .modal-card,
+body.theme-dark .payment-modal,
+body.theme-dark .policy-modal,
+body.theme-dark .cart-panel,
+body.theme-dark .return-card,
+body.theme-dark .return-form-card,
+body.theme-dark .admin-returns-hero {
+  color: var(--white);
+}

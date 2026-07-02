@@ -1,0 +1,46 @@
+.page-shell {
+    width: min(100%, 1440px);
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+.section-shell {
+    width: min(100%, 1440px);
+    margin: 0 auto;
+    padding: 3rem 1rem;
+}
+
+.stack {
+    display: grid;
+    gap: 1rem;
+}
+
+.cluster {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.flow > * + * {
+    margin-top: 1rem;
+}
+
+.centered {
+    display: grid;
+    place-items: center;
+}
+
+.spacious {
+    padding-top: clamp(2rem, 4vw, 4rem);
+    padding-bottom: clamp(2rem, 4vw, 4rem);
+}
+
+.hidden-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.hidden-scrollbar::-webkit-scrollbar {
+    display: none;
+}
