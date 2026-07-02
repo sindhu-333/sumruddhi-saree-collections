@@ -3,18 +3,16 @@ import './BackgroundHero.css';
 
 const TRANSITION_MS = 420;
 
-const DEFAULT_HERO = [
-    'https://picsum.photos/seed/hero1/900/1100',
-    'https://picsum.photos/seed/hero2/900/1100',
-    'https://picsum.photos/seed/hero3/900/1100'
-];
+const HERO_BACKGROUND_IMAGES = ['/b3.jpeg'];
+
+const DEFAULT_HERO = HERO_BACKGROUND_IMAGES;
 
 // Floating image stack (the right-side card) should use these local images only
 const FLOATING_IMAGES = ['/b1.jpeg', '/b2.jpeg'];
 
 const BackgroundHero = ({ images = DEFAULT_HERO, onShopNow }) => {
     const handleImageError = (event) => {
-        event.currentTarget.src = 'https://picsum.photos/seed/hero-fallback/900/1100';
+        event.currentTarget.src = '/b3.jpeg';
     };
 
     const [index, setIndex] = useState(0);
@@ -25,7 +23,7 @@ const BackgroundHero = ({ images = DEFAULT_HERO, onShopNow }) => {
 
     useEffect(() => {
         mounted.current = true;
-        // reset on images change (background images may change) but floating stack uses FLOATING_IMAGES
+        // reset on images change so the hero background and floating stack stay in sync
         setIndex(0);
         setPrevSrc(null);
         setIsTransitioning(false);
@@ -57,7 +55,6 @@ const BackgroundHero = ({ images = DEFAULT_HERO, onShopNow }) => {
 
     return (
         <div className="background-hero">
-            <div className="hero-background-image"></div>
             <div className="hero-overlay"></div>
             <div className="hero-content">
                 <div className="hero-text-wrapper">

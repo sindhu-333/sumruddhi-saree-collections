@@ -113,8 +113,8 @@ function resolveImageSource(value, fallback = FALLBACK_PRODUCT_IMAGE) {
 
   return fallback;
 }
-// Filenames allowed for homepage hero images (served from the public root as /b1.jpg, /b2.jpg, /s1.jpg)
-const ALLOWED_HERO_FILENAMES = ['b1.jpg', 'b2.jpg', 's1.jpg'];
+// Filenames allowed for homepage hero images (served from the public root as /b1.jpg, /b2.jpg, /b3.jpg, /s1.jpg)
+const ALLOWED_HERO_FILENAMES = ['b1.jpg', 'b2.jpg', 'b3.jpg', 's1.jpg'];
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api').replace(/\/$/, '');
 
 async function apiRequest(path, options = {}) {
@@ -439,9 +439,9 @@ function AppShell() {
   const [allBookings, setAllBookings] = useState(() => initialAllBookings());
   const [ratings, setRatings] = useState(() => readStorage(STORAGE_KEYS.ratings, []));
   const [heroImages, setHeroImages] = useState(() => readStorage('hero-images', [
-    'https://picsum.photos/seed/saree1/900/1200',
-    'https://picsum.photos/seed/saree2/900/1200',
-    'https://picsum.photos/seed/saree3/900/1200'
+    '/b3.jpeg',
+    '/b1.jpeg',
+    '/b2.jpeg'
   ]));
 
   
