@@ -12,7 +12,10 @@ const path = require('path');
 const fs = require('fs');
 
 const app = express();
-app.set('trust proxy', true);
+// Trust the first proxy (Render provides a single proxy layer). Use numeric
+// trust value instead of `true` to avoid permissive proxy settings that
+// express-rate-limit warns about.
+app.set('trust proxy', 1);
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_change_me';
 const FRONTEND_BASE_URL = process.env.FRONTEND_BASE_URL || 'http://localhost:3002';
 const ADMIN_NOTIFICATION_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || 'sindhubhat39@gmail.com';
