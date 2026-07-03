@@ -120,7 +120,7 @@ function buildAuthLimiter(max, windowMs, message) {
 
 const loginLimiter = buildAuthLimiter(10, 15 * 60 * 1000, 'Too many login attempts. Try again in 15 minutes.');
 const signupLimiter = buildAuthLimiter(8, 15 * 60 * 1000, 'Too many signup attempts. Try again in 15 minutes.');
-const resetRequestLimiter = buildAuthLimiter(5, 15 * 60 * 1000, 'Too many reset requests. Try again in 15 minutes.');
+const resetRequestLimiter = buildAuthLimiter(20, 15 * 60 * 1000, 'Too many reset requests. Try again in 15 minutes.');
 const resetApplyLimiter = buildAuthLimiter(10, 15 * 60 * 1000, 'Too many password reset attempts. Try again in 15 minutes.');
 
 function createTokenPair() {
@@ -563,14 +563,20 @@ app.post('/api/auth/resend-verification-email', resetRequestLimiter, async (req,
     );
 
     const verifyUrl = `${FRONTEND_BASE_URL}/#/verify-email?token=${tokenPair.raw}`;
-    // Send verification email asynchronously; do not block on SMTP failures.
-    sendEmail({
+    const mailResult = await sendEmail({
       to: user.email,
       subject: 'Verify your Saree Collections account',
       text: `Welcome to Saree Collections. Verify your email using this link: ${verifyUrl}\nIf link does not open, use token: ${tokenPair.raw}`
-    }).catch((err) => console.error('[VERIFY_EMAIL_RESEND_FAIL]', err && err.message));
+    });
 
-    return res.json({ message: 'If account exists, verification instructions were sent.' });
+    if (!mailResult.queued) {
+      console.warn('[VERIFY_EMAIL_RESEND_FALLBACK]', mailResult.error || 'email not queued');
+    }
+
+    return res.json({
+      message: 'If account exists, verification instructions were sent.',
+      queued: mailResult.queued
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'db error' });
