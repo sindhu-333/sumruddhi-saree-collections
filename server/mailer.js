@@ -2,14 +2,18 @@ require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 const https = require('https');
 const nodemailer = require('nodemailer');
 
-function normalizeSmtpValue(value) {
+function normalizeSmtpCredential(value) {
   return String(value || '').trim().replace(/\s+/g, '');
 }
 
+function normalizeMailValue(value) {
+  return String(value || '').trim();
+}
+
 function createSmtpTransporter() {
-  const host = normalizeSmtpValue(process.env.SMTP_HOST);
-  const user = normalizeSmtpValue(process.env.SMTP_USER);
-  const pass = normalizeSmtpValue(process.env.SMTP_PASS);
+  const host = normalizeSmtpCredential(process.env.SMTP_HOST);
+  const user = normalizeSmtpCredential(process.env.SMTP_USER);
+  const pass = normalizeSmtpCredential(process.env.SMTP_PASS);
 
   if (!host || !user || !pass) {
     return null;
@@ -31,7 +35,7 @@ function createSmtpTransporter() {
 const smtpTransporter = createSmtpTransporter();
 
 function buildMailApiPayload({ to, subject, text, html }) {
-  const from = normalizeSmtpValue(process.env.MAIL_FROM || process.env.SMTP_USER || 'no-reply@saree.local');
+  const from = normalizeMailValue(process.env.MAIL_FROM || process.env.SMTP_USER || 'no-reply@saree.local');
   return JSON.stringify({
     from,
     to,
@@ -42,9 +46,9 @@ function buildMailApiPayload({ to, subject, text, html }) {
 }
 
 async function sendWithMailApi({ to, subject, text, html }) {
-  const provider = normalizeSmtpValue(process.env.MAIL_PROVIDER || 'resend').toLowerCase();
-  const apiKey = normalizeSmtpValue(process.env.MAIL_API_KEY || '');
-  const apiUrl = normalizeSmtpValue(process.env.MAIL_API_URL || '');
+  const provider = normalizeMailValue(process.env.MAIL_PROVIDER || 'resend').toLowerCase();
+  const apiKey = normalizeSmtpCredential(process.env.MAIL_API_KEY || '');
+  const apiUrl = normalizeMailValue(process.env.MAIL_API_URL || '');
 
   if (!apiKey || !apiUrl) {
     return { queued: false, fallback: true, reason: 'missing mail api config' };
@@ -90,7 +94,7 @@ async function sendWithMailApi({ to, subject, text, html }) {
 }
 
 async function sendEmail({ to, subject, text, html }) {
-  const from = normalizeSmtpValue(process.env.MAIL_FROM || process.env.SMTP_USER || 'no-reply@saree.local');
+  const from = normalizeMailValue(process.env.MAIL_FROM || process.env.SMTP_USER || 'no-reply@saree.local');
 
   const apiResult = await sendWithMailApi({ to, subject, text, html });
   if (apiResult.queued) {
