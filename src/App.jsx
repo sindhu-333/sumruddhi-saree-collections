@@ -115,7 +115,9 @@ function resolveImageSource(value, fallback = FALLBACK_PRODUCT_IMAGE) {
 }
 // Filenames allowed for homepage hero images (served from the public root as /b1.jpg, /b2.jpg, /b3.jpg, /s1.jpg)
 const ALLOWED_HERO_FILENAMES = ['b1.jpg', 'b2.jpg', 'b3.jpg', 's1.jpg'];
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api').replace(/\/$/, '');
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+  ? import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '')
+  : '/api';
 
 async function apiRequest(path, options = {}) {
   let response;
@@ -1009,11 +1011,11 @@ function AppShell() {
     }
   };
 
-  const handleAuthSubmit = async ({ email, password, firstName, lastName, role, ...formData }) => {
+  const handleAuthSubmit = async ({ mode, email, password, firstName, lastName, role, ...formData }) => {
     const normalizedEmail = String(email || '').trim().toLowerCase();
 
     try {
-      if (authState.mode === 'signup') {
+      if (mode === 'signup') {
         await apiRequest('/auth/signup', {
           method: 'POST',
           body: JSON.stringify({
