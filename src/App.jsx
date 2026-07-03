@@ -3225,6 +3225,7 @@ function AuthModal({ open, mode, role, onClose, onSubmit, onRequestPasswordReset
   const [resetEmail, setResetEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [emailNotVerifiedEmail, setEmailNotVerifiedEmail] = useState('');
+  const [resendFallbackToken, setResendFallbackToken] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const mountedRef = useRef(true);
@@ -3281,11 +3282,21 @@ function AuthModal({ open, mode, role, onClose, onSubmit, onRequestPasswordReset
           setIsSubmitting(false);
           return;
         }
-        await apiRequest('/auth/resend-verification-email', {
+
+        const data = await apiRequest('/auth/resend-verification-email', {
           method: 'POST',
           body: JSON.stringify({ email: emailNotVerifiedEmail.trim().toLowerCase() })
         });
-        setAuthError('');
+
+        if (data.verificationToken) {
+          setResendFallbackToken(data.verificationToken);
+          setAuthError('Email delivery failed. Use the token below to verify manually.');
+          setAuxMode('verify');
+          setVerifyToken(data.verificationToken);
+          return;
+        }
+
+        setAuthError('If the account exists, verification instructions were sent.');
         setAuxMode('none');
         setEmailNotVerifiedEmail('');
         return;
@@ -3418,6 +3429,13 @@ function AuthModal({ open, mode, role, onClose, onSubmit, onRequestPasswordReset
                 {isSubmitting ? 'Sending...' : 'Resend Verification Email'}
               </button>
             </>
+          ) : null}
+
+          {auxMode === 'verify' && resendFallbackToken ? (
+            <div className="auth-hint auth-fallback-token">
+              If email fails, use this token to verify manually:
+              <pre>{resendFallbackToken}</pre>
+            </div>
           ) : null}
 
           {auxMode === 'request-reset' ? (
