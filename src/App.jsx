@@ -1059,7 +1059,12 @@ function AppShell() {
         window.setTimeout(() => action(), 0);
       }
     } catch (error) {
-      addToast(error.message || 'Authentication failed', 'error');
+      const message = error?.message || 'Authentication failed';
+      if (message.toLowerCase().includes('email not verified')) {
+        throw error;
+      }
+      addToast(message, 'error');
+      throw error;
     }
   };
 
