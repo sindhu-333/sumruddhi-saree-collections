@@ -24,9 +24,9 @@ function createTransporters() {
       port: explicitPort,
       secure: explicitSecure,
       auth: { user, pass },
-      connectionTimeout: 30000,
-      greetingTimeout: 30000,
-      socketTimeout: 30000,
+      connectionTimeout: 8000,
+      greetingTimeout: 8000,
+      socketTimeout: 8000,
       requireTLS: true,
       tls: { rejectUnauthorized: false }
     });
@@ -36,9 +36,9 @@ function createTransporters() {
       port: 465,
       secure: true,
       auth: { user, pass },
-      connectionTimeout: 30000,
-      greetingTimeout: 30000,
-      socketTimeout: 30000,
+      connectionTimeout: 8000,
+      greetingTimeout: 8000,
+      socketTimeout: 8000,
       requireTLS: true,
       tls: { rejectUnauthorized: false }
     });
@@ -47,9 +47,9 @@ function createTransporters() {
       port: 587,
       secure: false,
       auth: { user, pass },
-      connectionTimeout: 30000,
-      greetingTimeout: 30000,
-      socketTimeout: 30000,
+      connectionTimeout: 8000,
+      greetingTimeout: 8000,
+      socketTimeout: 8000,
       requireTLS: true,
       tls: { rejectUnauthorized: false }
     });

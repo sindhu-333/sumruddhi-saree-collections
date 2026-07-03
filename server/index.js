@@ -792,7 +792,7 @@ app.post('/api/bookings', requireAuth, async (req, res) => {
     const booking = mapBookingRow(row.rows[0]);
 
     // Send admin notification asynchronously (fire-and-forget) so booking succeeds even if email fails
-    sendEmail({
+    Promise.resolve().then(() => sendEmail({
       to: ADMIN_NOTIFICATION_EMAIL,
       subject: `New order received - ${booking.name}`,
       text: [
@@ -808,13 +808,13 @@ app.post('/api/bookings', requireAuth, async (req, res) => {
         `Payment ID: ${booking.paymentId || 'N/A'}`,
         `Payment Time: ${booking.paymentTime || 'N/A'}`
       ].join('\n')
-    }).catch((err) => {
+    })).catch((err) => {
       console.error('[BOOKING_EMAIL_FAIL]', ADMIN_NOTIFICATION_EMAIL, err.message);
     });
 
     // Send booking confirmation email to customer
     if (booking.userEmail) {
-      sendEmail({
+      Promise.resolve().then(() => sendEmail({
         to: booking.userEmail,
         subject: 'Order Confirmation - Saree Collections',
         text: [
@@ -840,7 +840,7 @@ app.post('/api/bookings', requireAuth, async (req, res) => {
           'Best regards,',
           'Saree Collections Team'
         ].join('\n')
-      }).catch((err) => {
+      })).catch((err) => {
         console.error('[BOOKING_USER_EMAIL_FAIL]', booking.userEmail, err.message);
       });
     }
