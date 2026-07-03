@@ -71,7 +71,9 @@ function getProviderOrder() {
 
 function getMailApiConfig(provider) {
   const providerName = String(provider || '').toLowerCase();
-  const from = normalizeMailValue(process.env.MAIL_FROM || process.env.SMTP_USER || 'no-reply@saree.local');
+  const configuredFrom = normalizeMailValue(process.env.MAIL_FROM || process.env.SMTP_USER || '');
+  const fallbackFrom = 'sindhubhat0904@gmail.com';
+  const from = configuredFrom || fallbackFrom;
 
   if (providerName === 'brevo') {
     const apiKey = normalizeSmtpCredential(process.env.BREVO_API_KEY || process.env.MAIL_API_KEY || '');
@@ -118,6 +120,10 @@ async function sendWithMailApi(provider, { to, subject, text, html }) {
 
   if (!config?.apiKey || !config?.apiUrl) {
     return { queued: false, fallback: true, reason: `missing ${provider} config` };
+  }
+
+  if (provider === 'brevo' && !config.apiKey.startsWith('xkeysib-')) {
+    return { queued: false, fallback: true, reason: `invalid ${provider} api key format` };
   }
 
   let parsedUrl;
@@ -197,7 +203,7 @@ async function sendEmail({ to, subject, text, html }) {
       return { queued: true, provider };
     }
 
-    lastError = apiResult.error || apiResult.response || apiResult.reason || `${provider} failed`; 
+    lastError = apiResult.error || apiResult.response || apiResult.reason || `${provider} failed`;
     console.warn(`[MAIL:${provider.toUpperCase()}_FAIL]`, lastError);
   }
 
