@@ -14,7 +14,11 @@ function createTransporter() {
     host,
     port: process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 587,
     secure: String(process.env.SMTP_SECURE || 'false').toLowerCase() === 'true',
-    auth: { user, pass }
+    auth: { user, pass },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 10000,
+    tls: { rejectUnauthorized: false }
   });
 }
 
