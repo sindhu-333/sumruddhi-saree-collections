@@ -575,7 +575,8 @@ app.post('/api/auth/resend-verification-email', resetRequestLimiter, async (req,
 
     return res.json({
       message: 'If account exists, verification instructions were sent.',
-      queued: mailResult.queued
+      queued: mailResult.queued,
+      verificationToken: mailResult.queued ? null : tokenPair.raw
     });
   } catch (err) {
     console.error(err);
