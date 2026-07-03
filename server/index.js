@@ -542,6 +542,41 @@ app.post('/api/auth/verify-email', async (req, res) => {
   }
 });
 
+app.post('/api/auth/resend-verification-email', resetRequestLimiter, async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'email required' });
+
+  try {
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const userResult = await pool.query('SELECT id, email, first_name FROM users WHERE email = $1', [normalizedEmail]);
+
+    if (!userResult.rows.length) {
+      return res.json({ message: 'If account exists, verification instructions were sent.' });
+    }
+
+    const user = userResult.rows[0];
+    const tokenPair = createTokenPair();
+
+    await pool.query(
+      'INSERT INTO email_verification_tokens (user_id, token_hash, expires_at) VALUES ($1,$2, now() + interval \'24 hours\')',
+      [user.id, tokenPair.hash]
+    );
+
+    const verifyUrl = `${FRONTEND_BASE_URL}/#/verify-email?token=${tokenPair.raw}`;
+    // Send verification email asynchronously; do not block on SMTP failures.
+    sendEmail({
+      to: user.email,
+      subject: 'Verify your Saree Collections account',
+      text: `Welcome to Saree Collections. Verify your email using this link: ${verifyUrl}\nIf link does not open, use token: ${tokenPair.raw}`
+    }).catch((err) => console.error('[VERIFY_EMAIL_RESEND_FAIL]', err && err.message));
+
+    return res.json({ message: 'If account exists, verification instructions were sent.' });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'db error' });
+  }
+});
+
 app.post('/api/auth/login', loginLimiter, async (req, res) => {
   const { email, password, role } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'missing fields' });

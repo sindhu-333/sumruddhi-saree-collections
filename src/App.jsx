@@ -3219,6 +3219,7 @@ function AuthModal({ open, mode, role, onClose, onSubmit, onRequestPasswordReset
   const [resetToken, setResetToken] = useState('');
   const [resetEmail, setResetEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [emailNotVerifiedEmail, setEmailNotVerifiedEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const mountedRef = useRef(true);
@@ -3243,6 +3244,7 @@ function AuthModal({ open, mode, role, onClose, onSubmit, onRequestPasswordReset
       setResetToken('');
       setResetEmail('');
       setNewPassword('');
+      setEmailNotVerifiedEmail('');
       setIsSubmitting(false);
     }
     setActiveMode(mode);
@@ -3265,6 +3267,22 @@ function AuthModal({ open, mode, role, onClose, onSubmit, onRequestPasswordReset
         await onVerifyEmailToken?.(verifyToken.trim());
         setAuxMode('none');
         setVerifyToken('');
+        return;
+      }
+
+      if (auxMode === 'resend-verify') {
+        if (!validateEmail(emailNotVerifiedEmail)) {
+          setAuthError('Enter a valid email address');
+          setIsSubmitting(false);
+          return;
+        }
+        await apiRequest('/auth/resend-verification-email', {
+          method: 'POST',
+          body: JSON.stringify({ email: emailNotVerifiedEmail.trim().toLowerCase() })
+        });
+        setAuthError('');
+        setAuxMode('none');
+        setEmailNotVerifiedEmail('');
         return;
       }
 
@@ -3310,6 +3328,15 @@ function AuthModal({ open, mode, role, onClose, onSubmit, onRequestPasswordReset
       }
 
       await onSubmit({ mode: activeMode, role: activeMode === 'signup' ? 'user' : loginRole, ...form });
+    } catch (error) {
+      const errorMsg = error?.message || 'Authentication failed';
+      if (activeMode === 'login' && errorMsg.toLowerCase().includes('email not verified')) {
+        setAuthError('Email not verified. Check your inbox or resend verification link.');
+        setEmailNotVerifiedEmail(form.email);
+        setAuxMode('resend-verify');
+      } else {
+        setAuthError(errorMsg);
+      }
     } finally {
       if (mountedRef.current) setIsSubmitting(false);
     }
@@ -3375,6 +3402,15 @@ function AuthModal({ open, mode, role, onClose, onSubmit, onRequestPasswordReset
               </label>
               <button className="primary-btn auth-submit" type="submit" disabled={isSubmitting || !verifyToken.trim()}>
                 {isSubmitting ? 'Verifying...' : 'Verify Email'}
+              </button>
+            </>
+          ) : null}
+
+          {auxMode === 'resend-verify' ? (
+            <>
+              <p className="auth-hint">We'll send a new verification link to your email address.</p>
+              <button className="primary-btn auth-submit" type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Sending...' : 'Resend Verification Email'}
               </button>
             </>
           ) : null}
