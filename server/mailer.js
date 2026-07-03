@@ -42,6 +42,7 @@ function buildMailApiPayload({ to, subject, text, html }) {
 }
 
 async function sendWithMailApi({ to, subject, text, html }) {
+  const provider = normalizeSmtpValue(process.env.MAIL_PROVIDER || 'resend').toLowerCase();
   const apiKey = normalizeSmtpValue(process.env.MAIL_API_KEY || '');
   const apiUrl = normalizeSmtpValue(process.env.MAIL_API_URL || '');
 
@@ -50,14 +51,21 @@ async function sendWithMailApi({ to, subject, text, html }) {
   }
 
   return new Promise((resolve) => {
+    const parsedUrl = new URL(apiUrl);
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    };
+
+    if (provider === 'brevo') {
+      headers['api-key'] = apiKey;
+    }
+
     const req = https.request(
-      apiUrl,
+      parsedUrl,
       {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
+        headers,
         timeout: 8000
       },
       (res) => {
