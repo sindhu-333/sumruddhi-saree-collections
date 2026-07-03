@@ -45,7 +45,7 @@ const smtpTransporter = createSmtpTransporter();
 const smtpFallbackEnabled = String(process.env.MAIL_FALLBACK_TO_SMTP || 'false').toLowerCase() === 'true';
 
 function getProviderOrder() {
-  const configuredProviders = normalizeProviderList(process.env.MAIL_PROVIDER || process.env.MAIL_PROVIDERS || 'resend,brevo');
+  const configuredProviders = normalizeProviderList(process.env.MAIL_PROVIDER || process.env.MAIL_PROVIDERS || 'resend');
   const orderedProviders = [];
 
   configuredProviders.forEach((provider) => {
@@ -56,12 +56,6 @@ function getProviderOrder() {
     }
   });
 
-  if (!orderedProviders.includes('resend')) {
-    orderedProviders.unshift('resend');
-  }
-  if (!orderedProviders.includes('brevo')) {
-    orderedProviders.push('brevo');
-  }
   if (smtpFallbackEnabled && !orderedProviders.includes('smtp')) {
     orderedProviders.push('smtp');
   }
