@@ -57,6 +57,7 @@ This starts the backend on port `4000` and the Vite frontend on port `3000`.
 
 Backend variables used by [server/index.js](server/index.js):
 
+- `DATABASE_URL` (preferred for hosted DB services)
 - `PGHOST`
 - `PGPORT`
 - `PGUSER`

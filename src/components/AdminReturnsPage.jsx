@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import './AdminReturnsPage.css';
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api').replace(/\/$/, '');
+const API_BASE = import.meta.env.VITE_API_BASE_URL
+  ? import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '')
+  : '/api';
 
 function getAuthToken() {
   const raw = window.localStorage.getItem('saree-auth-token');

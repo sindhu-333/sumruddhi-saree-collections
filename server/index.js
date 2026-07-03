@@ -451,11 +451,12 @@ app.post('/api/auth/signup', signupLimiter, async (req, res) => {
     );
 
     const verifyUrl = `${FRONTEND_BASE_URL}/#/verify-email?token=${tokenPair.raw}`;
-    await sendEmail({
+    // Send verification email asynchronously; do not block signup on SMTP failures.
+    sendEmail({
       to: user.email,
       subject: 'Verify your Saree Collections account',
       text: `Welcome to Saree Collections. Verify your email using this link: ${verifyUrl}\nIf link does not open, use token: ${tokenPair.raw}`
-    });
+    }).catch((err) => console.error('[VERIFY_EMAIL_SEND_FAIL]', err && err.message));
 
     res.status(201).json({
       message: 'Account created. Please verify your email before login.',
@@ -620,11 +621,12 @@ app.post('/api/auth/request-password-reset', resetRequestLimiter, async (req, re
     );
 
     const resetUrl = `${FRONTEND_BASE_URL}/#/reset-password?token=${tokenPair.raw}`;
-    await sendEmail({
+    // Send password reset email asynchronously; do not block the response on SMTP timeouts.
+    sendEmail({
       to: user.email,
       subject: 'Password reset request - Saree Collections',
       text: `You requested a password reset. Use this link: ${resetUrl}\nIf link does not open, use token: ${tokenPair.raw}\nThis token expires in 1 hour.`
-    });
+    }).catch((err) => console.error('[PASSWORD_RESET_EMAIL_FAIL]', err && err.message));
 
     return res.json({ message: 'If account exists, reset instructions were sent.' });
   } catch (err) {
