@@ -667,7 +667,13 @@ app.post('/api/auth/request-password-reset', resetRequestLimiter, async (req, re
     sendEmail({
       to: user.email,
       subject: 'Password reset request - Saree Collections',
-      text: `You requested a password reset. Use this link: ${resetUrl}\nIf link does not open, use token: ${tokenPair.raw}\nThis token expires in 1 hour.`
+      text: `You requested a password reset.
+
+Your reset code is: ${tokenPair.raw}
+
+Open this link to reset automatically: ${resetUrl}
+
+If the link does not open, paste the code in the app. This code expires in 1 hour.`
     }).catch((err) => console.error('[PASSWORD_RESET_EMAIL_FAIL]', err && err.message));
 
     return res.json({ message: 'If account exists, reset instructions were sent.' });

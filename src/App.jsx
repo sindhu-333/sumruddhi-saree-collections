@@ -1096,7 +1096,7 @@ function AppShell() {
         method: 'POST',
         body: JSON.stringify({ email })
       });
-      addToast('Password reset instructions sent to email', 'success');
+      addToast('Reset code sent to your email', 'success');
     } catch (error) {
       addToast(error.message || 'Could not request password reset', 'error');
       throw error;
@@ -1387,6 +1387,7 @@ function AppShell() {
         <Route path="/reset-password">
           <ResetPasswordPage
             currentUser={currentUser}
+            onRequestPasswordReset={handleRequestPasswordReset}
             onResetPassword={handleResetPassword}
             onOpenLogin={() => openAuth('login')}
             onBack={() => history.push('/')}
@@ -1905,12 +1906,15 @@ function VerifyEmailPage({ currentUser, onVerifyEmailToken, onOpenLogin, onBack 
   );
 }
 
-function ResetPasswordPage({ currentUser, onResetPassword, onOpenLogin, onBack }) {
+function ResetPasswordPage({ currentUser, onRequestPasswordReset, onResetPassword, onOpenLogin, onBack }) {
   const location = useLocation();
   const history = useHistory();
   const [status, setStatus] = useState('idle');
   const [message, setMessage] = useState('Enter a new password to reset your account password.');
   const [token, setToken] = useState('');
+  const [resetStage, setResetStage] = useState('request');
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetCode, setResetCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -1921,16 +1925,52 @@ function ResetPasswordPage({ currentUser, onResetPassword, onOpenLogin, onBack }
   useEffect(() => {
     const t = new URLSearchParams(location.search).get('token') || '';
     setToken(t);
-    if (!t) {
-      setStatus('missing');
-      setMessage('No reset token found in the link. Use the token from your email.');
+    if (t) {
+      setResetStage('complete');
+      setStatus('idle');
+      setMessage('Enter a new password to reset your account password.');
+    } else {
+      setResetStage('request');
+      setStatus('idle');
+      setMessage('Enter your email to receive a one-time reset code.');
     }
   }, [location.search]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!token) return;
     setPageError('');
+
+    if (resetStage === 'request') {
+      if (!validateEmail(resetEmail)) {
+        setPageError('Enter a valid email address.');
+        setStatus('error');
+        return;
+      }
+
+      try {
+        setIsSubmitting(true);
+        setStatus('loading');
+        setMessage('Sending reset code...');
+        await onRequestPasswordReset(resetEmail.trim().toLowerCase());
+        setStatus('success');
+        setMessage('A reset code has been sent to your email. Enter it below with a new password.');
+        setResetStage('complete');
+        setToken('');
+      } catch (err) {
+        setStatus('error');
+        setMessage(err.message || 'Could not send reset code.');
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
+    const code = token || resetCode.trim();
+    if (!code) {
+      setPageError('Enter the reset code from your email.');
+      setStatus('error');
+      return;
+    }
     if (!validatePassword(newPassword)) {
       setPageError('Password must be at least 8 characters, include uppercase, lowercase, a number and a special character.');
       setStatus('error');
@@ -1946,7 +1986,7 @@ function ResetPasswordPage({ currentUser, onResetPassword, onOpenLogin, onBack }
       setIsSubmitting(true);
       setStatus('loading');
       setMessage('Resetting password...');
-      await onResetPassword(token, newPassword);
+      await onResetPassword(code, newPassword);
       const successMessage = 'Password reset successful. Please log in.';
       setStatus('success');
       setMessage(successMessage);
@@ -1973,31 +2013,59 @@ function ResetPasswordPage({ currentUser, onResetPassword, onOpenLogin, onBack }
     return upper && lower && number && special;
   };
 
+  const validateEmail = (email) => {
+    if (!email) return false;
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(String(email).toLowerCase());
+  };
+
   return (
     <main className="verify-email-page">
       <section className="verify-email-card">
         <p className="eyebrow">Password reset</p>
-        <h1>Reset your password</h1>
+        <h1>{resetStage === 'request' ? 'Request reset code' : 'Reset your password'}</h1>
         <p className={`verify-email-message ${status}`}>{message}</p>
 
         <form className="auth-form verify-email-form" onSubmit={handleSubmit}>
           {pageError ? <div className="auth-error">{pageError}</div> : null}
-          <label>
-            New password
-            <div className="password-field">
-              <input type={showNewPassword ? 'text' : 'password'} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={8} />
-              <button type="button" className="password-toggle" onClick={() => setShowNewPassword((s) => !s)} aria-label="Toggle password visibility">{showNewPassword ? '🙈' : '👁️'}</button>
-            </div>
-          </label>
-          <label>
-            Confirm password
-            <div className="password-field">
-              <input type={showConfirmPassword ? 'text' : 'password'} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={8} />
-              <button type="button" className="password-toggle" onClick={() => setShowConfirmPassword((s) => !s)} aria-label="Toggle password visibility">{showConfirmPassword ? '🙈' : '👁️'}</button>
-            </div>
-          </label>
-          <button className="primary-btn auth-submit" type="submit" disabled={isSubmitting || !token}>
-            {isSubmitting ? 'Resetting...' : 'Reset Password'}
+          {resetStage === 'request' ? (
+            <label>
+              Email
+              <input type="email" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} required />
+            </label>
+          ) : null}
+
+          {resetStage === 'complete' ? (
+            <>
+              {!token ? (
+                <label>
+                  OTP Code
+                  <input value={resetCode} onChange={(e) => setResetCode(e.target.value)} placeholder="Enter code from email" required />
+                </label>
+              ) : null}
+              <label>
+                New password
+                <div className="password-field">
+                  <input type={showNewPassword ? 'text' : 'password'} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={8} />
+                  <button type="button" className="password-toggle" onClick={() => setShowNewPassword((s) => !s)} aria-label="Toggle password visibility">
+                    {showNewPassword ? '🙈' : '👁️'}
+                  </button>
+                </div>
+              </label>
+              <label>
+                Confirm password
+                <div className="password-field">
+                  <input type={showConfirmPassword ? 'text' : 'password'} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={8} />
+                  <button type="button" className="password-toggle" onClick={() => setShowConfirmPassword((s) => !s)} aria-label="Toggle password visibility">
+                    {showConfirmPassword ? '🙈' : '👁️'}
+                  </button>
+                </div>
+              </label>
+            </>
+          ) : null}
+
+          <button className="primary-btn auth-submit" type="submit" disabled={isSubmitting || (resetStage === 'request' ? !resetEmail.trim() : (!token && !resetCode.trim()) || !newPassword.trim() || !confirmPassword.trim())}>
+            {isSubmitting ? 'Please wait...' : resetStage === 'request' ? 'Send reset code' : 'Reset Password'}
           </button>
         </form>
 
@@ -3290,7 +3358,7 @@ function AuthModal({ open, mode, onClose, onSubmit, onRequestPasswordReset, onRe
   const [activeMode, setActiveMode] = useState(mode);
   const [auxMode, setAuxMode] = useState('none');
   const [verifyToken, setVerifyToken] = useState('');
-  const [resetToken, setResetToken] = useState('');
+  const [resetCode, setResetCode] = useState('');
   const [resetEmail, setResetEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [emailNotVerifiedEmail, setEmailNotVerifiedEmail] = useState('');
@@ -3316,7 +3384,7 @@ function AuthModal({ open, mode, onClose, onSubmit, onRequestPasswordReset, onRe
       });
       setAuxMode('none');
       setVerifyToken('');
-      setResetToken('');
+      setResetCode('');
       setResetEmail('');
       setNewPassword('');
       setEmailNotVerifiedEmail('');
@@ -3379,6 +3447,7 @@ function AuthModal({ open, mode, onClose, onSubmit, onRequestPasswordReset, onRe
           return;
         }
         await onRequestPasswordReset?.(resetEmail.trim().toLowerCase());
+        setResetCode('');
         setAuxMode('reset');
         return;
       }
@@ -3389,9 +3458,9 @@ function AuthModal({ open, mode, onClose, onSubmit, onRequestPasswordReset, onRe
           setIsSubmitting(false);
           return;
         }
-        await onResetPassword?.(resetToken.trim(), newPassword);
+        await onResetPassword?.(resetCode.trim(), newPassword);
         setAuxMode('none');
-        setResetToken('');
+        setResetCode('');
         setNewPassword('');
         setActiveMode('login');
         history.replace('/');
@@ -3509,16 +3578,17 @@ function AuthModal({ open, mode, onClose, onSubmit, onRequestPasswordReset, onRe
                 />
               </label>
               <button className="primary-btn auth-submit" type="submit" disabled={isSubmitting || !resetEmail.trim()}>
-                {isSubmitting ? 'Sending...' : 'Send Reset Email'}
+                {isSubmitting ? 'Sending...' : 'Send Reset Code'}
               </button>
             </>
           ) : null}
 
           {auxMode === 'reset' ? (
             <>
+              <p className="auth-hint">Enter the code sent to your email and choose a new password.</p>
               <label>
-                Reset Token (from email)
-                <input value={resetToken} onChange={(e) => setResetToken(e.target.value)} required />
+                OTP Code
+                <input value={resetCode} onChange={(e) => setResetCode(e.target.value)} placeholder="Enter code from email" required />
               </label>
               <label>
                 New Password
@@ -3529,7 +3599,7 @@ function AuthModal({ open, mode, onClose, onSubmit, onRequestPasswordReset, onRe
                   </button>
                 </div>
               </label>
-              <button className="primary-btn auth-submit" type="submit" disabled={isSubmitting || !resetToken.trim() || !newPassword.trim()}>
+              <button className="primary-btn auth-submit" type="submit" disabled={isSubmitting || !resetCode.trim() || !newPassword.trim()}>
                 {isSubmitting ? 'Resetting...' : 'Reset Password'}
               </button>
             </>
