@@ -1803,6 +1803,8 @@ body.theme-dark .user-menu-logout:hover {
 
 /* ───── SEARCH BAR (if open) ───── */
 .search-bar-wrapper {
+  position: relative;
+  z-index: 201;
   background: var(--white);
   border-bottom: 1px solid var(--border);
   padding: 14px 48px;
@@ -1818,6 +1820,7 @@ body.theme-dark .user-menu-logout:hover {
   width: 100%;
   gap: 12px;
   flex-wrap: wrap;
+  min-width: 0;
 }
 .search-bar-form input {
   flex: 1;
@@ -1861,7 +1864,7 @@ body.theme-dark .user-menu-logout:hover {
   flex-direction: column;
   gap: 6px;
   flex: 1;
-  min-width: 240px;
+  min-width: 0;
   font-size: 11px;
   font-weight: 700;
   color: var(--warm-gray);
@@ -1877,12 +1880,14 @@ body.theme-dark .user-menu-logout:hover {
   color: var(--charcoal);
   outline: none;
   transition: border-color 0.2s;
+  min-width: 0;
 }
 .price-filter-group {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
+  min-width: 0;
 }
 .filter-chip {
   background: rgba(255,255,255,0.94);
@@ -1893,6 +1898,7 @@ body.theme-dark .user-menu-logout:hover {
   font-size: 13px;
   cursor: pointer;
   transition: background 0.2s, border-color 0.2s, color 0.2s;
+  min-width: 0;
 }
 .filter-chip:hover,
 .filter-chip.active {
