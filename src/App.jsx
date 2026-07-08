@@ -2014,8 +2014,7 @@ function ResetPasswordPage({ currentUser, onResetPassword, onOpenLogin, onBack }
 
 function HomePage({ products, categories, newArrivals, currentUser, onAddToCart, onOpenDetails, onRequestLogin, onRequestSignup, cart, onCheckout, onRemoveFromCart, getAverageRating, getRatingCount, heroImages, searchTerm, onSearchTermChange }) {
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedPriceRange, setSelectedPriceRange] = useState('all');
-  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
+  const [highlightedCategory, setHighlightedCategory] = useState('all');
   const heroRef = useRef(null);
   const collectionsRef = useRef(null);
   const scrollerRef = useRef(null);
@@ -2026,29 +2025,38 @@ function HomePage({ products, categories, newArrivals, currentUser, onAddToCart,
   useScrollReveal(scrollerRef, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
   useScrollReveal(allSareesRef, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
 
-  const priceRanges = [
-    { id: 'all', label: 'All prices' },
-    { id: 'under2000', label: 'Under ₹2,000', min: 0, max: 2000 },
-    { id: '2000to3000', label: '₹2,000–₹3,000', min: 2000, max: 3000 },
-    { id: 'above3000', label: 'Above ₹3,000', min: 3000 }
-  ];
-
-  const selectedPrice = priceRanges.find((range) => range.id === selectedPriceRange) || priceRanges[0];
   const visibleCollections = selectedCategory !== 'all'
     ? products.filter((product) => String(product.category || '').trim().toLowerCase() === selectedCategory.trim().toLowerCase())
     : products;
 
-  const priceFilteredCollections = visibleCollections.filter((product) => {
-    const price = Number(product.price || 0);
-    if (!selectedPrice || selectedPrice.id === 'all') return true;
-    if (selectedPrice.max != null) {
-      return price >= (selectedPrice.min || 0) && price <= selectedPrice.max;
+  useEffect(() => {
+    const normalized = searchTerm?.trim().toLowerCase();
+    if (!normalized) {
+      setHighlightedCategory('all');
+      return;
     }
-    return price >= (selectedPrice.min || 0);
-  });
+
+    const categoryMatch = categories.find((category) => {
+      const name = String(category.name || '').toLowerCase();
+      return normalized === name || normalized.includes(name) || name.includes(normalized);
+    });
+
+    if (categoryMatch) {
+      setHighlightedCategory(categoryMatch.name);
+      window.setTimeout(() => {
+        document.getElementById('category')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 0);
+      return;
+    }
+
+    setHighlightedCategory('all');
+  }, [searchTerm, categories]);
+
+  const priceFilteredCollections = visibleCollections;
 
   const handleSelectCategory = (categoryName) => {
     setSelectedCategory((prev) => (prev && prev.trim().toLowerCase() === String(categoryName).trim().toLowerCase() ? 'all' : categoryName));
+    setHighlightedCategory(categoryName);
     window.setTimeout(() => {
       document.getElementById('all-sarees')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 0);
@@ -2098,40 +2106,6 @@ function HomePage({ products, categories, newArrivals, currentUser, onAddToCart,
         )}
       </section>
 
-      <section className="storefront-filters">
-        <div className="storefront-filters-row">
-          <div className="filter-control-group">
-            <button type="button" className="filter-button" onClick={() => setIsFilterPanelOpen((prev) => !prev)}>
-              Filters
-            </button>
-            {isFilterPanelOpen ? (
-              <div className="filter-panel">
-                <label className="filter-select">
-                  Category
-                  <select value={selectedCategory} onChange={(event) => setSelectedCategory(event.target.value)}>
-                    <option value="all">All categories</option>
-                    {categories.map((category) => (
-                      <option key={category.id} value={category.name}>{category.name}</option>
-                    ))}
-                  </select>
-                </label>
-                <label className="filter-select">
-                  Price
-                  <select value={selectedPriceRange} onChange={(event) => setSelectedPriceRange(event.target.value)}>
-                    {priceRanges.map((range) => (
-                      <option key={range.id} value={range.id}>{range.label}</option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-            ) : null}
-          </div>
-          <div className="filter-summary">
-            {selectedCategory !== 'all' ? <span>Category: {selectedCategory}</span> : <span>Category: All</span>}
-            <span>Price: {selectedPrice.label}</span>
-          </div>
-        </div>
-      </section>
 
       <div id="collections" ref={collectionsRef} className="reveal">
         <SareeGrid
@@ -2145,7 +2119,7 @@ function HomePage({ products, categories, newArrivals, currentUser, onAddToCart,
       </div>
 
       <div id="category" ref={scrollerRef} className="reveal">
-        <CollectionScroller collections={categories} title="Browse Saree Categories" onSelectCategory={handleSelectCategory} activeCategory={selectedCategory} />
+        <CollectionScroller collections={categories} title="Browse Saree Categories" onSelectCategory={handleSelectCategory} activeCategory={highlightedCategory} />
       </div>
 
       <div id="all-sarees" ref={allSareesRef} className="reveal">

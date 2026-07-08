@@ -70,7 +70,7 @@ const CollectionScroller = ({ collections, title = "Saree Categories", onSelectC
                     {collections && collections.map((collection, index) => (
                         <div 
                             key={collection.id || index} 
-                            className="collection-item"
+                            className={`collection-item ${activeCategory === collection.name ? 'active' : ''}`}
                             style={{ animationDelay: `${index * 0.1}s` }}
                         >
                             <div className="collection-image-wrapper">
