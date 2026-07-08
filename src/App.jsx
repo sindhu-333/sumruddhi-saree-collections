@@ -447,7 +447,7 @@ function AppShell() {
   ]));
 
   
-  const [authState, setAuthState] = useState({ open: false, mode: 'login', role: 'user' });
+  const [authState, setAuthState] = useState({ open: false, mode: 'login' });
   const [pendingAction, setPendingAction] = useState(null);
   const [notice, setNotice] = useState(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -663,7 +663,7 @@ function AppShell() {
     setNotice({ message: flashMessage, type: 'success' });
 
     if (flashMode === 'login') {
-      openAuth('login', 'user');
+      openAuth('login');
     }
 
     window.localStorage.removeItem(STORAGE_KEYS.authFlash);
@@ -719,18 +719,18 @@ function AppShell() {
   };
 
   const closeAuth = () => {
-    setAuthState({ open: false, mode: 'login', role: 'user' });
+    setAuthState({ open: false, mode: 'login' });
     setPendingAction(null);
   };
 
-  const openAuth = (mode = 'login', role = 'user', action = null) => {
-    setAuthState({ open: true, mode, role });
+  const openAuth = (mode = 'login', action = null) => {
+    setAuthState({ open: true, mode });
     setPendingAction(() => action);
   };
 
   const handleAddToCart = (product) => {
     if (currentUser?.role !== 'user') {
-      openAuth('login', 'user', () => handleAddToCart(product));
+      openAuth('login', () => handleAddToCart(product));
       return;
     }
 
@@ -1011,7 +1011,7 @@ function AppShell() {
     }
   };
 
-  const handleAuthSubmit = async ({ mode, email, password, firstName, lastName, role, ...formData }) => {
+  const handleAuthSubmit = async ({ mode, email, password, firstName, lastName, ...formData }) => {
     const normalizedEmail = String(email || '').trim().toLowerCase();
 
     try {
@@ -1038,13 +1038,14 @@ function AppShell() {
         return;
       }
 
+      const loginBody = {
+        email: normalizedEmail,
+        password
+      };
+
       const data = await apiRequest('/auth/login', {
         method: 'POST',
-        body: JSON.stringify({
-          email: normalizedEmail,
-          password,
-          role: role || authState.role || 'user'
-        })
+        body: JSON.stringify(loginBody)
       });
 
       const loggedInUser = mapApiUserToProfile(data.user);
@@ -1053,11 +1054,19 @@ function AppShell() {
       closeAuth();
       addToast(`Welcome back, ${loggedInUser.name}`, 'success');
 
+      if (loggedInUser.role === 'admin' || loggedInUser.role === 'staff') {
+        history.push('/admin');
+        return;
+      }
+
       if (pendingAction) {
         const action = pendingAction;
         setPendingAction(null);
         window.setTimeout(() => action(), 0);
+        return;
       }
+
+      history.push('/account');
     } catch (error) {
       const message = error?.message || 'Authentication failed';
       if (message.toLowerCase().includes('email not verified')) {
@@ -1237,7 +1246,7 @@ function AppShell() {
 
   const bookProduct = (product) => {
     if (currentUser?.role !== 'user') {
-      openAuth('login', 'user', () => bookProduct(product));
+      openAuth('login', () => bookProduct(product));
       return;
     }
 
@@ -1247,7 +1256,7 @@ function AppShell() {
 
   const bookCart = () => {
     if (currentUser?.role !== 'user') {
-      openAuth('login', 'user', bookCart);
+      openAuth('login', bookCart);
       return;
     }
 
@@ -1295,8 +1304,8 @@ function AppShell() {
         isMenuOpen={isUserMenuOpen}
         onCloseMenu={() => setIsUserMenuOpen(false)}
         onSearchToggle={() => setIsSearchOpen((prev) => !prev)}
-        onLogin={() => openAuth('login', 'user')}
-        onSignup={() => openAuth('signup', 'user')}
+        onLogin={() => openAuth('login')}
+        onSignup={() => openAuth('signup')}
         onLogout={handleLogout}
         onAdminMenuToggle={() => setIsAdminMenuOpen((prev) => !prev)}
         isAdminMenuOpen={isAdminMenuOpen}
@@ -1315,8 +1324,8 @@ function AppShell() {
             currentUser={currentUser}
             onAddToCart={handleAddToCart}
             onOpenDetails={handleOpenDetails}
-            onRequestLogin={() => openAuth('login', 'user')}
-            onRequestSignup={() => openAuth('signup', 'user')}
+            onRequestLogin={() => openAuth('login')}
+            onRequestSignup={() => openAuth('signup')}
             cart={cart}
             onCheckout={bookCart}
             onRemoveFromCart={handleRemoveFromCart}
@@ -1332,7 +1341,7 @@ function AppShell() {
             onBack={() => history.push('/')}
             onAddToCart={handleAddToCart}
             onBookProduct={bookProduct}
-            onRequestLogin={() => openAuth('login', 'user')}
+            onRequestLogin={() => openAuth('login')}
             getAverageRating={getAverageRating}
             getRatingCount={getRatingCount}
           />
@@ -1341,7 +1350,7 @@ function AppShell() {
           <VerifyEmailPage
             currentUser={currentUser}
             onVerifyEmailToken={handleVerifyEmailToken}
-            onOpenLogin={() => openAuth('login', 'user')}
+            onOpenLogin={() => openAuth('login')}
             onBack={() => history.push('/')}
           />
         </Route>
@@ -1349,7 +1358,7 @@ function AppShell() {
           <ResetPasswordPage
             currentUser={currentUser}
             onResetPassword={handleResetPassword}
-            onOpenLogin={() => openAuth('login', 'user')}
+            onOpenLogin={() => openAuth('login')}
             onBack={() => history.push('/')}
           />
         </Route>
@@ -1514,7 +1523,6 @@ function AppShell() {
       <AuthModal
         open={authState.open}
         mode={authState.mode}
-        role={authState.role}
         onClose={closeAuth}
         onSubmit={handleAuthSubmit}
         onRequestPasswordReset={handleRequestPasswordReset}
@@ -1768,7 +1776,7 @@ function VerifyEmailPage({ currentUser, onVerifyEmailToken, onOpenLogin, onBack 
 
     if (!token) {
       setStatus('missing');
-      setMessage('No verification token was found. Use the token from your email or request a new one.');
+      setMessage('No verification code was found. Use the code from your email or request a new one.');
       return;
     }
 
@@ -1836,11 +1844,11 @@ function VerifyEmailPage({ currentUser, onVerifyEmailToken, onOpenLogin, onBack 
         {status === 'loading' ? null : (
           <form className="auth-form verify-email-form" onSubmit={handleManualVerify}>
             <label>
-              Verification Token
+              Verification Code
               <input
                 value={manualToken}
                 onChange={(event) => setManualToken(event.target.value)}
-                placeholder="Paste token from email here"
+                placeholder="Enter code from email"
               />
             </label>
             <button className="primary-btn auth-submit" type="submit" disabled={isSubmitting || !manualToken.trim()}>
@@ -2221,8 +2229,8 @@ function SareeDetailPage({ products, currentUser, onBack, onAddToCart, onBookPro
 
           {currentUser?.role !== 'user' ? (
             <div className="auth-note detail-auth-note">
-              <span>Login as a user to add to cart and book.</span>
-              <button className="primary-btn" onClick={onRequestLogin}>User Login</button>
+              <span>Login to add to cart and book.</span>
+              <button className="primary-btn" onClick={onRequestLogin}>Login</button>
             </div>
           ) : null}
 
@@ -3198,7 +3206,7 @@ function RatingForm({ bookingId, productId, onSubmitRating }) {
   );
 }
 
-function AuthModal({ open, mode, role, onClose, onSubmit, onRequestPasswordReset, onResetPassword, onVerifyEmailToken }) {
+function AuthModal({ open, mode, onClose, onSubmit, onRequestPasswordReset, onResetPassword, onVerifyEmailToken }) {
   const history = useHistory();
   const [authError, setAuthError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -3218,7 +3226,6 @@ function AuthModal({ open, mode, role, onClose, onSubmit, onRequestPasswordReset
     password: ''
   });
   const [activeMode, setActiveMode] = useState(mode);
-  const [loginRole, setLoginRole] = useState(role);
   const [auxMode, setAuxMode] = useState('none');
   const [verifyToken, setVerifyToken] = useState('');
   const [resetToken, setResetToken] = useState('');
@@ -3254,9 +3261,8 @@ function AuthModal({ open, mode, role, onClose, onSubmit, onRequestPasswordReset
       setIsSubmitting(false);
     }
     setActiveMode(mode);
-    setLoginRole(role);
     return () => { mountedRef.current = false; };
-  }, [open, mode, role]);
+  }, [open, mode]);
 
   if (!open) {
     return null;
@@ -3343,7 +3349,7 @@ function AuthModal({ open, mode, role, onClose, onSubmit, onRequestPasswordReset
         }
       }
 
-      await onSubmit({ mode: activeMode, role: activeMode === 'signup' ? 'user' : loginRole, ...form });
+      await onSubmit({ mode: activeMode, ...form });
     } catch (error) {
       const errorMsg = error?.message || 'Authentication failed';
       if (activeMode === 'login' && errorMsg.toLowerCase().includes('email not verified')) {
@@ -3373,8 +3379,7 @@ function AuthModal({ open, mode, role, onClose, onSubmit, onRequestPasswordReset
     return upper && lower && number && special;
   };
 
-  const effectiveRole = activeMode === 'signup' ? 'user' : loginRole === 'admin' ? 'admin' : 'user';
-  const heading = effectiveRole === 'admin' ? 'Admin Login' : activeMode === 'signup' ? 'Create Account' : 'User Login';
+  const heading = activeMode === 'signup' ? 'Create Account' : 'Login';
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -3384,37 +3389,19 @@ function AuthModal({ open, mode, role, onClose, onSubmit, onRequestPasswordReset
           <p className="eyebrow">Secure access</p>
           <h2>{heading}</h2>
           <p>
-            {effectiveRole === 'admin'
-              ? 'Use the admin account to manage saree inventory.'
-              : 'Sign in to add sarees to cart and complete your booking.'}
+            {activeMode === 'signup'
+              ? 'Create an account to book sarees and manage your orders.'
+              : 'Sign in with your email and password to continue.'}
           </p>
         </div>
 
         <form className="auth-form" onSubmit={submit}>
-          {activeMode === 'login' ? (
-            <div className="auth-role-switch" role="tablist" aria-label="Login type">
-              <button
-                type="button"
-                className={`auth-role-tab ${effectiveRole === 'user' ? 'active' : ''}`}
-                onClick={() => setLoginRole('user')}
-              >
-                User Login
-              </button>
-              <button
-                type="button"
-                className={`auth-role-tab ${effectiveRole === 'admin' ? 'active' : ''}`}
-                onClick={() => setLoginRole('admin')}
-              >
-                Admin Login
-              </button>
-            </div>
-          ) : null}
-
+  
           {auxMode === 'verify' ? (
             <>
               <label>
-                Verification Token (from email)
-                <input value={verifyToken} onChange={(e) => setVerifyToken(e.target.value)} required />
+                Verification Code
+                <input value={verifyToken} onChange={(e) => setVerifyToken(e.target.value)} placeholder="Enter code from email" required />
               </label>
               <button className="primary-btn auth-submit" type="submit" disabled={isSubmitting || !verifyToken.trim()}>
                 {isSubmitting ? 'Verifying...' : 'Verify Email'}
@@ -3424,7 +3411,7 @@ function AuthModal({ open, mode, role, onClose, onSubmit, onRequestPasswordReset
 
           {auxMode === 'resend-verify' ? (
             <>
-              <p className="auth-hint">We'll send a new verification link to your email address.</p>
+              <p className="auth-hint">We'll send a new verification code to your email address.</p>
               <button className="primary-btn auth-submit" type="submit" disabled={isSubmitting}>
                 {isSubmitting ? 'Sending...' : 'Resend Verification Email'}
               </button>
@@ -3476,7 +3463,7 @@ function AuthModal({ open, mode, role, onClose, onSubmit, onRequestPasswordReset
             </>
           ) : null}
 
-          {auxMode === 'none' && activeMode === 'signup' && role !== 'admin' ? (
+          {auxMode === 'none' && activeMode === 'signup' ? (
             <div className="form-row">
               <label>
                 First Name
@@ -3496,7 +3483,7 @@ function AuthModal({ open, mode, role, onClose, onSubmit, onRequestPasswordReset
             </label>
           ) : null}
 
-          {auxMode === 'none' && activeMode === 'signup' && role !== 'admin' ? (
+          {auxMode === 'none' && activeMode === 'signup' ? (
             <>
               <label>
                 Password
@@ -3508,13 +3495,6 @@ function AuthModal({ open, mode, role, onClose, onSubmit, onRequestPasswordReset
               <label>
                 Country/Region
                 <input value={form.countryRegion} onChange={(e) => setForm({ ...form, countryRegion: e.target.value })} required />
-              <label>
-                Password
-                <div className="password-field">
-                  <input type={showPassword ? 'text' : 'password'} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
-                  <button type="button" className="password-toggle" onClick={() => setShowPassword((s) => !s)} aria-label="Toggle password visibility">{showPassword ? '🙈' : '👁️'}</button>
-                </div>
-              </label>
               </label>
               <label>
                 Apartment/Suite (Optional)
@@ -3555,13 +3535,11 @@ function AuthModal({ open, mode, role, onClose, onSubmit, onRequestPasswordReset
             </>
           ) : null}
 
-          {auxMode === 'none' && effectiveRole === 'admin' ? <div className="auth-hint">Use the admin email configured in database.</div> : null}
-
           {auxMode === 'none' ? (
             <div>
               {authError ? <div className="auth-error">{authError}</div> : null}
               <button className="primary-btn auth-submit" type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Please wait...' : activeMode === 'signup' ? 'Create Account' : effectiveRole === 'admin' ? 'Admin Login' : 'Login'}
+                {isSubmitting ? 'Please wait...' : activeMode === 'signup' ? 'Create Account' : 'Login'}
               </button>
             </div>
           ) : null}
@@ -3573,7 +3551,7 @@ function AuthModal({ open, mode, role, onClose, onSubmit, onRequestPasswordReset
           </button>
         ) : null}
 
-        {role !== 'admin' && auxMode === 'none' ? (
+        {auxMode === 'none' ? (
           <button
             className="ghost-link"
             type="button"

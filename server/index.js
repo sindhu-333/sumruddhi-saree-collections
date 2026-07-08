@@ -124,7 +124,7 @@ const resetRequestLimiter = buildAuthLimiter(20, 15 * 60 * 1000, 'Too many reset
 const resetApplyLimiter = buildAuthLimiter(10, 15 * 60 * 1000, 'Too many password reset attempts. Try again in 15 minutes.');
 
 function createTokenPair() {
-  const raw = crypto.randomBytes(32).toString('hex');
+  const raw = crypto.randomInt(100000, 1000000).toString();
   const hash = crypto.createHash('sha256').update(raw).digest('hex');
   return { raw, hash };
 }
@@ -455,7 +455,7 @@ app.post('/api/auth/signup', signupLimiter, async (req, res) => {
     sendEmail({
       to: user.email,
       subject: 'Verify your Saree Collections account',
-      text: `Welcome to Saree Collections. Verify your email using this link: ${verifyUrl}\nIf link does not open, use token: ${tokenPair.raw}`
+      text: `Welcome to Saree Collections. Your verification code is: ${tokenPair.raw}\n\nEnter this code in the app to verify your email. If you prefer, open the link:\n${verifyUrl}`
     }).catch((err) => console.error('[VERIFY_EMAIL_SEND_FAIL]', err && err.message));
 
     res.status(201).json({
@@ -566,7 +566,7 @@ app.post('/api/auth/resend-verification-email', resetRequestLimiter, async (req,
     const mailResult = await sendEmail({
       to: user.email,
       subject: 'Verify your Saree Collections account',
-      text: `Welcome to Saree Collections. Verify your email using this link: ${verifyUrl}\nIf link does not open, use token: ${tokenPair.raw}`
+      text: `Welcome to Saree Collections. Your verification code is: ${tokenPair.raw}\n\nEnter this code in the app to verify your email, or open this link:\n${verifyUrl}`
     });
 
     if (!mailResult.queued) {
