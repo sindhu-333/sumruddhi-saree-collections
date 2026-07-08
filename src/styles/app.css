@@ -1865,52 +1865,91 @@ body.theme-dark .user-menu-logout:hover {
   max-width: 1180px;
   margin: 0 auto;
 }
-.storefront-search-field {
+.filter-control-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.filter-button {
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-deep) 100%);
+  color: #fff;
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 16px 28px rgba(191, 135, 67, 0.18);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+.filter-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 20px 36px rgba(191, 135, 67, 0.24);
+}
+.filter-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: min(360px, calc(100vw - 64px));
+  margin-top: 14px;
+  padding: 20px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  box-shadow: 0 24px 48px rgba(17, 19, 26, 0.12);
+}
+body.theme-dark .filter-panel {
+  background: rgba(17, 19, 26, 0.96);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.36);
+}
+.filter-select {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  flex: 1;
-  min-width: 0;
-  font-size: 11px;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--warm-gray);
-  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.storefront-search-field input {
+.filter-select select {
   border: 1.5px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 10px 14px;
+  padding: 12px 14px;
   font-size: 14px;
   background: var(--ivory);
   color: var(--charcoal);
   outline: none;
-  transition: border-color 0.2s;
-  min-width: 0;
+  transition: border-color 0.2s, background 0.2s;
 }
-.price-filter-group {
+body.theme-dark .filter-select select {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--white);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+.filter-summary {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
-  min-width: 0;
+  flex-wrap: wrap;
+  color: var(--warm-gray);
+  font-size: 14px;
 }
-.filter-chip {
-  background: rgba(255,255,255,0.94);
-  border: 1px solid var(--border);
-  color: var(--charcoal);
+.filter-summary span {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 14px;
   border-radius: 999px;
-  padding: 10px 18px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: background 0.2s, border-color 0.2s, color 0.2s;
-  min-width: 0;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--charcoal);
 }
-.filter-chip:hover,
-.filter-chip.active {
-  background: var(--gold);
-  color: var(--black);
-  border-color: transparent;
+body.theme-dark .filter-summary span {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--white);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* ───── BOOKING STRIP ───── */

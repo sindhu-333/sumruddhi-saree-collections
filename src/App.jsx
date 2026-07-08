@@ -1279,11 +1279,7 @@ function AppShell() {
 
   const handleSearchSubmit = (event) => {
     event.preventDefault();
-    const trimmed = searchTerm.trim();
-    setSearchTerm(trimmed);
-    if (trimmed) {
-      setIsSearchOpen(false);
-    }
+    setSearchTerm((prev) => prev.trim());
   };
 
   const searchResults = useMemo(() => {
@@ -1336,12 +1332,6 @@ function AppShell() {
               aria-label="Search sarees"
               autoFocus
             />
-            <button type="submit" className="primary-btn" disabled={!searchTerm.trim()}>
-              Search
-            </button>
-            <button type="button" className="ghost-btn" onClick={() => setIsSearchOpen(false)}>
-              Close
-            </button>
           </form>
           {searchTerm.trim() ? (
             <div className="search-summary">
@@ -2023,8 +2013,9 @@ function ResetPasswordPage({ currentUser, onResetPassword, onOpenLogin, onBack }
 }
 
 function HomePage({ products, categories, newArrivals, currentUser, onAddToCart, onOpenDetails, onRequestLogin, onRequestSignup, cart, onCheckout, onRemoveFromCart, getAverageRating, getRatingCount, heroImages, searchTerm, onSearchTermChange }) {
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedPriceRange, setSelectedPriceRange] = useState('all');
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
   const heroRef = useRef(null);
   const collectionsRef = useRef(null);
   const scrollerRef = useRef(null);
@@ -2043,7 +2034,7 @@ function HomePage({ products, categories, newArrivals, currentUser, onAddToCart,
   ];
 
   const selectedPrice = priceRanges.find((range) => range.id === selectedPriceRange) || priceRanges[0];
-  const visibleCollections = selectedCategory
+  const visibleCollections = selectedCategory !== 'all'
     ? products.filter((product) => String(product.category || '').trim().toLowerCase() === selectedCategory.trim().toLowerCase())
     : products;
 
@@ -2057,7 +2048,7 @@ function HomePage({ products, categories, newArrivals, currentUser, onAddToCart,
   });
 
   const handleSelectCategory = (categoryName) => {
-    setSelectedCategory((prev) => (prev && prev.trim().toLowerCase() === String(categoryName).trim().toLowerCase() ? '' : categoryName));
+    setSelectedCategory((prev) => (prev && prev.trim().toLowerCase() === String(categoryName).trim().toLowerCase() ? 'all' : categoryName));
     window.setTimeout(() => {
       document.getElementById('all-sarees')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 0);
@@ -2109,26 +2100,35 @@ function HomePage({ products, categories, newArrivals, currentUser, onAddToCart,
 
       <section className="storefront-filters">
         <div className="storefront-filters-row">
-          <label className="storefront-search-field">
-            Search sarees
-            <input
-              type="search"
-              placeholder="Search by name, category, or fabric"
-              value={searchTerm || ''}
-              onChange={(event) => onSearchTermChange(event.target.value)}
-            />
-          </label>
-          <div className="price-filter-group" role="group" aria-label="Filter by price range">
-            {priceRanges.map((range) => (
-              <button
-                key={range.id}
-                type="button"
-                className={`filter-chip ${selectedPriceRange === range.id ? 'active' : ''}`}
-                onClick={() => setSelectedPriceRange(range.id)}
-              >
-                {range.label}
-              </button>
-            ))}
+          <div className="filter-control-group">
+            <button type="button" className="filter-button" onClick={() => setIsFilterPanelOpen((prev) => !prev)}>
+              Filters
+            </button>
+            {isFilterPanelOpen ? (
+              <div className="filter-panel">
+                <label className="filter-select">
+                  Category
+                  <select value={selectedCategory} onChange={(event) => setSelectedCategory(event.target.value)}>
+                    <option value="all">All categories</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.name}>{category.name}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="filter-select">
+                  Price
+                  <select value={selectedPriceRange} onChange={(event) => setSelectedPriceRange(event.target.value)}>
+                    {priceRanges.map((range) => (
+                      <option key={range.id} value={range.id}>{range.label}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            ) : null}
+          </div>
+          <div className="filter-summary">
+            {selectedCategory !== 'all' ? <span>Category: {selectedCategory}</span> : <span>Category: All</span>}
+            <span>Price: {selectedPrice.label}</span>
           </div>
         </div>
       </section>
