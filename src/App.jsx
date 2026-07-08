@@ -456,7 +456,6 @@ function AppShell() {
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [pendingCartForPayment, setPendingCartForPayment] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
   const [openPolicy, setOpenPolicy] = useState(null);
   const [themeMode, setThemeMode] = useState(() => readStorage(STORAGE_KEYS.themeMode, 'dark'));
 
@@ -1276,11 +1275,21 @@ function AppShell() {
 
   const cartItems = Object.values(cart);
   const cartCount = cartItems.reduce((sum, item) => sum + (item.qty || 0), 0);
+
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    const trimmed = searchTerm.trim();
+    setSearchTerm(trimmed);
+    if (trimmed) {
+      setIsSearchOpen(false);
+    }
+  };
+
   const searchResults = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
 
     if (!term) {
-      return products.slice(0, 6);
+      return products;
     }
 
     return products.filter((product) => {
@@ -1291,6 +1300,8 @@ function AppShell() {
       return searchable.includes(term);
     });
   }, [products, searchTerm]);
+
+  const storefrontProducts = searchResults;
 
   return (
     <div className="app-shell">
@@ -1310,15 +1321,41 @@ function AppShell() {
         onAdminMenuToggle={() => setIsAdminMenuOpen((prev) => !prev)}
         isAdminMenuOpen={isAdminMenuOpen}
         onCloseAdminMenu={() => setIsAdminMenuOpen(false)}
-          onOpenPolicy={setOpenPolicy}
+        onOpenPolicy={setOpenPolicy}
       />
+
+      {isSearchOpen ? (
+        <div className="search-bar-wrapper">
+          <form className="search-bar-form" onSubmit={handleSearchSubmit}>
+            <input
+              type="search"
+              placeholder="Search sarees by name, category, fabric..."
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              aria-label="Search sarees"
+              autoFocus
+            />
+            <button type="submit" className="primary-btn" disabled={!searchTerm.trim()}>
+              Search
+            </button>
+            <button type="button" className="ghost-btn" onClick={() => setIsSearchOpen(false)}>
+              Close
+            </button>
+          </form>
+          {searchTerm.trim() ? (
+            <div className="search-summary">
+              {`${searchResults.length} result${searchResults.length === 1 ? '' : 's'} for "${searchTerm.trim()}"`}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       {notice ? <NoticeBanner notice={notice} /> : null}
 
       <Switch>
         <Route exact path="/">
           <HomePage
-            products={products}
+            products={storefrontProducts}
             categories={categories}
             newArrivals={newArrivals}
             currentUser={currentUser}
@@ -1332,6 +1369,8 @@ function AppShell() {
             getAverageRating={getAverageRating}
             getRatingCount={getRatingCount}
             heroImages={heroImages}
+            searchTerm={searchTerm}
+            onSearchTermChange={setSearchTerm}
           />
         </Route>
         <Route path="/saree/:id">
@@ -1736,6 +1775,9 @@ function AppHeader({ currentUser, cartCount, themeMode, onThemeToggle, onCartTog
       </nav>
 
       <div className="header-actions">
+        <button type="button" className="header-icon-button" aria-label="Search collections" onClick={onSearchToggle}>
+          <span className="icon-search" aria-hidden="true" />
+        </button>
         <button type="button" className="theme-toggle-button" aria-label={themeMode === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'} onClick={onThemeToggle}>
           <i className={themeMode === 'dark' ? 'fas fa-sun' : 'fas fa-moon'} aria-hidden="true" />
         </button>
@@ -1979,8 +2021,9 @@ function ResetPasswordPage({ currentUser, onResetPassword, onOpenLogin, onBack }
   );
 }
 
-function HomePage({ products, categories, newArrivals, currentUser, onAddToCart, onOpenDetails, onRequestLogin, onRequestSignup, cart, onCheckout, onRemoveFromCart, getAverageRating, getRatingCount, heroImages }) {
+function HomePage({ products, categories, newArrivals, currentUser, onAddToCart, onOpenDetails, onRequestLogin, onRequestSignup, cart, onCheckout, onRemoveFromCart, getAverageRating, getRatingCount, heroImages, searchTerm, onSearchTermChange }) {
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedPriceRange, setSelectedPriceRange] = useState('all');
   const heroRef = useRef(null);
   const collectionsRef = useRef(null);
   const scrollerRef = useRef(null);
@@ -1990,9 +2033,27 @@ function HomePage({ products, categories, newArrivals, currentUser, onAddToCart,
   useScrollReveal(collectionsRef, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
   useScrollReveal(scrollerRef, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
   useScrollReveal(allSareesRef, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+
+  const priceRanges = [
+    { id: 'all', label: 'All prices' },
+    { id: 'under2000', label: 'Under ₹2,000', min: 0, max: 2000 },
+    { id: '2000to3000', label: '₹2,000–₹3,000', min: 2000, max: 3000 },
+    { id: 'above3000', label: 'Above ₹3,000', min: 3000 }
+  ];
+
+  const selectedPrice = priceRanges.find((range) => range.id === selectedPriceRange) || priceRanges[0];
   const visibleCollections = selectedCategory
     ? products.filter((product) => String(product.category || '').trim().toLowerCase() === selectedCategory.trim().toLowerCase())
     : products;
+
+  const priceFilteredCollections = visibleCollections.filter((product) => {
+    const price = Number(product.price || 0);
+    if (!selectedPrice || selectedPrice.id === 'all') return true;
+    if (selectedPrice.max != null) {
+      return price >= (selectedPrice.min || 0) && price <= selectedPrice.max;
+    }
+    return price >= (selectedPrice.min || 0);
+  });
 
   const handleSelectCategory = (categoryName) => {
     setSelectedCategory((prev) => (prev && prev.trim().toLowerCase() === String(categoryName).trim().toLowerCase() ? '' : categoryName));
@@ -2045,6 +2106,32 @@ function HomePage({ products, categories, newArrivals, currentUser, onAddToCart,
         )}
       </section>
 
+      <section className="storefront-filters">
+        <div className="storefront-filters-row">
+          <label className="storefront-search-field">
+            Search sarees
+            <input
+              type="search"
+              placeholder="Search by name, category, or fabric"
+              value={searchTerm || ''}
+              onChange={(event) => onSearchTermChange(event.target.value)}
+            />
+          </label>
+          <div className="price-filter-group" role="group" aria-label="Filter by price range">
+            {priceRanges.map((range) => (
+              <button
+                key={range.id}
+                type="button"
+                className={`filter-chip ${selectedPriceRange === range.id ? 'active' : ''}`}
+                onClick={() => setSelectedPriceRange(range.id)}
+              >
+                {range.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <div id="collections" ref={collectionsRef} className="reveal">
         <SareeGrid
           title="New Arrivals"
@@ -2063,7 +2150,7 @@ function HomePage({ products, categories, newArrivals, currentUser, onAddToCart,
       <div id="all-sarees" ref={allSareesRef} className="reveal">
       <SareeGrid
         title={selectedCategory ? `${selectedCategory} Sarees` : 'All Sarees'}
-        sarees={visibleCollections}
+        sarees={priceFilteredCollections}
         onAdd={onAddToCart}
         onOpenDetails={onOpenDetails}
         getAverageRating={getAverageRating}
