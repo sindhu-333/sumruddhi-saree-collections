@@ -3279,6 +3279,8 @@ function AuthModal({ open, mode, onClose, onSubmit, onRequestPasswordReset, onRe
         await onVerifyEmailToken?.(verifyToken.trim());
         setAuxMode('none');
         setVerifyToken('');
+        setAuthError('Email verified. Please log in with your credentials.');
+        setActiveMode('login');
         return;
       }
 
@@ -3353,9 +3355,11 @@ function AuthModal({ open, mode, onClose, onSubmit, onRequestPasswordReset, onRe
     } catch (error) {
       const errorMsg = error?.message || 'Authentication failed';
       if (activeMode === 'login' && errorMsg.toLowerCase().includes('email not verified')) {
-        setAuthError('Email not verified. Check your inbox or resend verification link.');
-        setEmailNotVerifiedEmail(form.email);
-        setAuxMode('resend-verify');
+        setAuthError('Email not verified. Enter the code from your email or resend verification.');
+        setEmailNotVerifiedEmail(form.email.trim().toLowerCase());
+        setVerifyToken('');
+        setResendFallbackToken('');
+        setAuxMode('verify');
       } else {
         setAuthError(errorMsg);
       }
@@ -3406,6 +3410,12 @@ function AuthModal({ open, mode, onClose, onSubmit, onRequestPasswordReset, onRe
               <button className="primary-btn auth-submit" type="submit" disabled={isSubmitting || !verifyToken.trim()}>
                 {isSubmitting ? 'Verifying...' : 'Verify Email'}
               </button>
+              <p className="auth-hint">
+                Didn’t receive a code?{' '}
+                <button type="button" className="ghost-link auth-inline-link" onClick={() => setAuxMode('resend-verify')}>
+                  Resend verification code
+                </button>
+              </p>
             </>
           ) : null}
 
