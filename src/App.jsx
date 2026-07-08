@@ -1632,7 +1632,7 @@ function AppHeader({ currentUser, cartCount, themeMode, onThemeToggle, onCartTog
             <img src={logo} alt="Samruddhi Saree Collections logo" className="brand-logo-image" />
             <span className="brand-compact-copy">
               <span className="brand-compact-name">SAMRUDDHI</span>
-              <span className="brand-compact-tag">Saree Collections</span>
+              <span className="brand-compact-tag">Samruddhi Saree Collections</span>
             </span>
           </button>
 
@@ -1701,7 +1701,7 @@ function AppHeader({ currentUser, cartCount, themeMode, onThemeToggle, onCartTog
             <img src={logo} alt="Samruddhi Saree Collections logo" className="brand-logo-image" />
             <span className="brand-compact-copy">
               <span className="brand-compact-name">SAMRUDDHI</span>
-              <span className="brand-compact-tag">Saree Collections</span>
+              <span className="brand-compact-tag">Samruddhi Saree Collections</span>
             </span>
           </button>
 
