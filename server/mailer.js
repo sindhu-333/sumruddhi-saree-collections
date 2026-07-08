@@ -17,6 +17,20 @@ function normalizeProviderList(value) {
     .filter(Boolean);
 }
 
+function parseEmailAddress(value) {
+  const normalized = String(value || '').trim();
+  const match = normalized.match(/^(?:"?([^"<]*)"?\s*)?<([^>]+)>$/);
+
+  if (match) {
+    return {
+      name: match[1].trim() || '',
+      email: match[2].trim()
+    };
+  }
+
+  return { name: '', email: normalized };
+}
+
 function createSmtpTransporter() {
   const host = normalizeSmtpCredential(process.env.SMTP_HOST);
   const user = normalizeSmtpCredential(process.env.SMTP_USER);
@@ -72,6 +86,8 @@ function getMailApiConfig(provider) {
   if (providerName === 'brevo') {
     const apiKey = normalizeSmtpCredential(process.env.BREVO_API_KEY || process.env.MAIL_API_KEY || '');
     const apiUrl = normalizeMailValue(process.env.BREVO_API_URL || 'https://api.brevo.com/v3/smtp/email');
+    const { name, email } = parseEmailAddress(from);
+
     return {
       apiKey,
       apiUrl,
@@ -80,7 +96,7 @@ function getMailApiConfig(provider) {
         'api-key': apiKey
       },
       payload: ({ to, subject, text, html }) => JSON.stringify({
-        sender: { name: 'Saree Collections', email: from },
+        sender: { name: name || 'Saree Collections', email },
         to: [{ email: to }],
         subject,
         textContent: text,
