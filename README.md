@@ -1,31 +1,68 @@
 # Saree Collections App
 
-A React + Vite storefront with an Express + PostgreSQL backend for saree browsing, bookings, admin collection management, and verification flows.
+A full-stack saree storefront built with React and Vite on the frontend, and Express with PostgreSQL on the backend.
 
-## What this project includes
+## Project overview
 
-- Storefront with collection browsing, cart, booking, and payment proof upload.
-- Admin dashboard for order tracking, booking verification, revenue view, and collection management.
-- Email flows for signup verification and password reset.
-- Responsive UI with dark mode support.
+This project showcases saree collections with a polished customer experience and real administrative workflows.
 
-## Tech Stack
+### What is built in this app
 
-- Frontend: React 17, Vite, React Router
-- Backend: Node.js, Express
-- Database: PostgreSQL
+- Customer storefront with product discovery, browsing, and collection navigation.
+- Persistent cart and booking flow for products.
+- Payment proof upload for verification-based bookings.
+- Returns and exchange request flow with file uploads and admin review.
+- Admin panel for booking review, collection management, and request processing.
+- Email-driven flows for signup verification and password reset.
+- Responsive and animated UI with a modern landing experience.
+
+### Frontend features
+
+- Product grid and category scroller.
+- Shopping cart with quantity updates.
+- Booking flow with user information capture.
+- Payment screenshot upload for verification.
+- Return/exchange request form.
+- Admin returns page for approval and rejection.
+- Dark mode support and animated interface.
+
+### Backend features
+
+- Express API server with PostgreSQL data persistence.
+- User authentication, signup, login, and JWT session handling.
+- Password reset and verification email support.
+- Booking records stored with user, product, payment, and status details.
+- Returns table with document upload support and admin notes.
+- File uploads handled with Multer and served from `/uploads`.
+- CORS origin validation and rate limiting on auth routes.
+
+## Tech stack
+
+- Frontend: React 17, Vite, React Router DOM
+- Backend: Node.js, Express, PostgreSQL, JWT
 - File uploads: Multer
-- Email: Nodemailer
+- Email service: Nodemailer / hosted mail provider
+- Dev tooling: Vite, npm
 
-## Local Setup
+## Repository structure
 
-1. Install dependencies at the project root.
+- `/src` — React application source and UI components
+- `/src/components` — cart, product cards, payment modal, admin returns page, and forms
+- `/src/data` — sample saree product seed data
+- `/server` — API server, database client, email helper, and uploads handling
+- `/server/db` — SQL schema and seed data
+- `/uploads` — runtime storage for file uploads
+- `/public` — static assets served by Vite
+
+## Local setup
+
+1. Install root dependencies:
 
 ```powershell
 npm install
 ```
 
-2. Install backend dependencies if needed.
+2. Install backend dependencies:
 
 ```powershell
 cd server
@@ -33,25 +70,43 @@ npm install
 cd ..
 ```
 
-3. Create your backend environment file.
+3. Configure backend environment:
 
-- Copy [server/.env.example](server/.env.example) to [server/.env](server/.env)
-- Fill in your own PostgreSQL, JWT, SMTP, and admin values
-- Never commit [server/.env](server/.env)
+```powershell
+cd server
+copy .env.example .env
+```
 
-4. Start the full app locally.
+4. Update `server/.env` with your database, JWT, and email values.
+
+5. Initialize the database:
+
+```powershell
+# Run these in your PostgreSQL client or pgAdmin
+server/db/init.sql
+server/db/seed_products.sql
+```
+
+6. Start the application:
 
 ```powershell
 npm run dev
 ```
 
-This starts the backend on port `4000` and the Vite frontend on port `3000`.
+This launches:
+- Backend API on `http://localhost:4000`
+- Frontend Vite app on `http://localhost:3000`
 
-## Database Setup
+### Run only one service
 
-1. Create a PostgreSQL database that matches `PGDATABASE` in [server/.env](server/.env).
-2. Run the schema file: [server/db/init.sql](server/db/init.sql)
-3. Seed sample products with: [server/db/seed_products.sql](server/db/seed_products.sql)
+- Frontend only: `npm run dev:client`
+- Backend only: `npm run dev:server`
+
+## Database setup
+
+- Create a PostgreSQL database matching `PGDATABASE` in `server/.env`.
+- Run the schema script at `server/db/init.sql`.
+- Seed sample sarees with `server/db/seed_products.sql`.
 
 ## Environment Variables
 
@@ -65,12 +120,15 @@ Backend variables used by [server/index.js](server/index.js):
 - `PGDATABASE`
 - `JWT_SECRET`
 - `PORT`
+- `MAIL_PROVIDER`
+- `MAIL_API_URL`
+- `MAIL_API_KEY`
+- `MAIL_FROM`
 - `SMTP_HOST`
 - `SMTP_PORT`
 - `SMTP_SECURE`
 - `SMTP_USER`
 - `SMTP_PASS`
-- `MAIL_FROM`
 - `ADMIN_NOTIFICATION_EMAIL`
 - `FRONTEND_BASE_URL`
 - `ADMIN_DEFAULT_PASSWORD`

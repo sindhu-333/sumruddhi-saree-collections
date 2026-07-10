@@ -106,7 +106,23 @@ async function ensureReturnsTable() {
     console.error('ensureReturnsTable error', err);
   }
 }
+
+async function ensureProductOfferColumns() {
+  try {
+    await pool.query(`
+      ALTER TABLE products
+        ADD COLUMN IF NOT EXISTS is_offer BOOLEAN DEFAULT false,
+        ADD COLUMN IF NOT EXISTS offer_price NUMERIC(10,2) DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS offer_ends_in_days INTEGER DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS offer_label TEXT DEFAULT '';
+    `);
+  } catch (err) {
+    console.error('ensureProductOfferColumns error', err);
+  }
+}
+
 ensureReturnsTable();
+ensureProductOfferColumns();
 
 function buildAuthLimiter(max, windowMs, message) {
   return rateLimit({
@@ -237,6 +253,23 @@ function normalizeProductImages(product = {}) {
   };
 }
 
+function mapProductRow(row = {}) {
+  const product = normalizeProductImages(row);
+  return {
+    ...product,
+    isNew: Boolean(product.is_new ?? product.isNew ?? false),
+    isOffer: Boolean(product.is_offer ?? product.isOffer ?? false),
+    offerPrice: Number(product.offer_price ?? product.offerPrice ?? 0),
+    offerEndsInDays: Number(product.offer_ends_in_days ?? product.offerEndsInDays ?? 0),
+    offerLabel: String(product.offer_label ?? product.offerLabel ?? '').trim(),
+    is_new: undefined,
+    is_offer: undefined,
+    offer_price: undefined,
+    offer_ends_in_days: undefined,
+    offer_label: undefined
+  };
+}
+
 function authMiddleware(req, res, next) {
   const auth = req.headers.authorization || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
@@ -305,8 +338,8 @@ app.post('/api/test-email', async (req, res) => {
 
 app.get('/api/products', async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, name, description, price, fabric, category, images, details, is_new, stock FROM products ORDER BY id');
-    res.json(result.rows.map(normalizeProductImages));
+    const result = await pool.query('SELECT id, name, description, price, fabric, category, images, details, is_new, stock, is_offer, offer_price, offer_ends_in_days, offer_label FROM products ORDER BY id');
+    res.json(result.rows.map(mapProductRow));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'db error' });
@@ -316,9 +349,9 @@ app.get('/api/products', async (req, res) => {
 app.get('/api/products/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await pool.query('SELECT * FROM products WHERE id = $1', [id]);
+    const result = await pool.query('SELECT id, name, description, price, fabric, category, images, details, is_new, stock, is_offer, offer_price, offer_ends_in_days, offer_label FROM products WHERE id = $1', [id]);
     if (result.rows.length === 0) return res.status(404).json({ error: 'not found' });
-    res.json(normalizeProductImages(result.rows[0]));
+    res.json(mapProductRow(result.rows[0]));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'db error' });
@@ -327,7 +360,7 @@ app.get('/api/products/:id', async (req, res) => {
 
 // Create new product (admin only)
 app.post('/api/products', requireAuth, requireAdmin, async (req, res) => {
-  const { name, description, price, fabric, category, images, details, stock, isNew } = req.body;
+  const { name, description, price, fabric, category, images, details, stock, isNew, isOffer, offerPrice, offerEndsInDays, offerLabel } = req.body;
   
   if (!name || !category || !price) {
     return res.status(400).json({ error: 'Missing required fields: name, category, price' });
@@ -335,12 +368,12 @@ app.post('/api/products', requireAuth, requireAdmin, async (req, res) => {
 
   try {
     const result = await pool.query(
-      `INSERT INTO products (name, description, price, fabric, category, images, details, is_new, stock)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-       RETURNING id, name, description, price, fabric, category, images, details, is_new, stock`,
-      [name, description, price, fabric, category, JSON.stringify(images || []), JSON.stringify(details || []), isNew || false, stock || 0]
+      `INSERT INTO products (name, description, price, fabric, category, images, details, is_new, stock, is_offer, offer_price, offer_ends_in_days, offer_label)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+       RETURNING id, name, description, price, fabric, category, images, details, is_new, stock, is_offer, offer_price, offer_ends_in_days, offer_label`,
+      [name, description, price, fabric, category, JSON.stringify(images || []), JSON.stringify(details || []), isNew || false, stock || 0, isOffer || false, Number(offerPrice || 0), Number(offerEndsInDays || 0), String(offerLabel || '').trim()]
     );
-    res.status(201).json(normalizeProductImages(result.rows[0]));
+    res.status(201).json(mapProductRow(result.rows[0]));
   } catch (err) {
     console.error('POST /api/products error:', err);
     res.status(500).json({ error: 'db error' });
@@ -350,7 +383,7 @@ app.post('/api/products', requireAuth, requireAdmin, async (req, res) => {
 // Update existing product (admin only)
 app.patch('/api/products/:id', requireAuth, requireAdmin, async (req, res) => {
   const { id } = req.params;
-  const { name, description, price, fabric, category, images, details, stock, isNew } = req.body;
+  const { name, description, price, fabric, category, images, details, stock, isNew, isOffer, offerPrice, offerEndsInDays, offerLabel } = req.body;
   
   if (!name || !category || !price) {
     return res.status(400).json({ error: 'Missing required fields: name, category, price' });
@@ -358,17 +391,17 @@ app.patch('/api/products/:id', requireAuth, requireAdmin, async (req, res) => {
 
   try {
     const result = await pool.query(
-      `UPDATE products SET name=$1, description=$2, price=$3, fabric=$4, category=$5, images=$6, details=$7, is_new=$8, stock=$9, updated_at=now()
-       WHERE id=$10
-       RETURNING id, name, description, price, fabric, category, images, details, is_new, stock`,
-      [name, description, price, fabric, category, JSON.stringify(images || []), JSON.stringify(details || []), isNew || false, stock || 0, id]
+      `UPDATE products SET name=$1, description=$2, price=$3, fabric=$4, category=$5, images=$6, details=$7, is_new=$8, stock=$9, is_offer=$10, offer_price=$11, offer_ends_in_days=$12, offer_label=$13, updated_at=now()
+       WHERE id=$14
+       RETURNING id, name, description, price, fabric, category, images, details, is_new, stock, is_offer, offer_price, offer_ends_in_days, offer_label`,
+      [name, description, price, fabric, category, JSON.stringify(images || []), JSON.stringify(details || []), isNew || false, stock || 0, isOffer || false, Number(offerPrice || 0), Number(offerEndsInDays || 0), String(offerLabel || '').trim(), id]
     );
     
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Product not found' });
     }
     
-    res.json(normalizeProductImages(result.rows[0]));
+    res.json(mapProductRow(result.rows[0]));
   } catch (err) {
     console.error('PATCH /api/products/:id error:', err);
     res.status(500).json({ error: 'db error' });

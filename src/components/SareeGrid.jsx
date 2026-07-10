@@ -2,7 +2,7 @@ import React from 'react';
 import SareeCard from './SareeCard';
 import './SareeGrid.css';
 
-const SareeGrid = ({ title = 'New Arrivals', sarees = [], onAdd, onOpenDetails, getAverageRating, getRatingCount }) => {
+const SareeGrid = ({ title = 'New Arrivals', sarees = [], onAdd, onOpenDetails, onToggleFavorite, favoriteIds = [], getAverageRating, getRatingCount }) => {
   return (
     <section className="saree-grid-section">
       <div className="grid-header">
@@ -24,7 +24,13 @@ const SareeGrid = ({ title = 'New Arrivals', sarees = [], onAdd, onOpenDetails, 
                 saree={saree}
                 onAdd={onAdd}
                 onOpenDetails={onOpenDetails}
+                onToggleFavorite={onToggleFavorite}
+                isFavorite={favoriteIds.includes(String(saree.id))}
                 isNew={saree.isNew}
+                isOffer={saree.isOffer}
+                offerPrice={saree.offerPrice}
+                offerEndsInDays={saree.offerEndsInDays}
+                offerLabel={saree.offerLabel}
                 getAverageRating={getAverageRating}
                 getRatingCount={getRatingCount}
               />

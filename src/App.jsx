@@ -35,7 +35,8 @@ const STORAGE_KEYS = {
   ratings: 'saree-customer-ratings',
   authFlash: 'saree-auth-flash',
   authFlashMode: 'saree-auth-flash-mode',
-  themeMode: 'saree-theme-mode'
+  themeMode: 'saree-theme-mode',
+  favorites: 'saree-favorites'
 };
 
 const DEFAULT_NEW_PRODUCT = {
@@ -46,7 +47,11 @@ const DEFAULT_NEW_PRODUCT = {
   category: 'Silk',
   fabric: '',
   stock: '10',
-  isNew: true
+  isNew: true,
+  isOffer: false,
+  offerPrice: '',
+  offerEndsInDays: '',
+  offerLabel: ''
 };
 
 const ADMIN_SECTION_META = {
@@ -376,7 +381,11 @@ function normalizeProduct(product, fallbackId) {
       'Comfortable for long wear',
       'Styling suitable for celebrations'
     ],
-    isNew: Boolean(product.isNew)
+    isNew: Boolean(product.isNew || product.is_new),
+    isOffer: Boolean(product.isOffer || product.is_offer),
+    offerPrice: Number(product.offerPrice || product.offer_price || 0),
+    offerEndsInDays: Number(product.offerEndsInDays || product.offer_ends_in_days || product.offerEndsInDays || 0),
+    offerLabel: String(product.offerLabel || product.offer_label || '').trim()
   };
 }
 
@@ -421,6 +430,19 @@ function initialBookings(email) {
   return Array.isArray(stored) ? stored.map(normalizeBookingRecord) : [];
 }
 
+function favoriteKeyFor(email) {
+  return `${STORAGE_KEYS.favorites}-${String(email || '').toLowerCase()}`;
+}
+
+function initialFavorites(email) {
+  if (!email) {
+    return [];
+  }
+
+  const stored = readStorage(favoriteKeyFor(email), []);
+  return Array.isArray(stored) ? stored : [];
+}
+
 function App() {
   return (
     <Router>
@@ -455,6 +477,7 @@ function AppShell() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
+  const [favorites, setFavorites] = useState(() => initialFavorites(initialCurrentUser()?.email));
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [pendingCartForPayment, setPendingCartForPayment] = useState([]);
   const [openPolicy, setOpenPolicy] = useState(null);
@@ -479,11 +502,13 @@ function AppShell() {
     if (currentUser?.email) {
       setCart(initialCart(currentUser.email));
       setBookings(initialBookings(currentUser.email));
+      setFavorites(initialFavorites(currentUser.email));
       return;
     }
 
     setCart({});
     setBookings([]);
+    setFavorites([]);
   }, [currentUser]);
 
   useEffect(() => {
@@ -595,6 +620,14 @@ function AppShell() {
 
     writeStorage(bookingsKeyFor(currentUser.email), compactBookingListForStorage(bookings));
   }, [bookings, currentUser]);
+
+  useEffect(() => {
+    if (!currentUser?.email) {
+      return;
+    }
+
+    writeStorage(favoriteKeyFor(currentUser.email), favorites);
+  }, [favorites, currentUser]);
 
   // Persist hero images only; allBookings is loaded from API and not stored in localStorage.
   useEffect(() => {
@@ -1173,7 +1206,11 @@ function AppShell() {
         fabric: productData.fabric,
         images: Array.isArray(productData.images) ? productData.images : [],
         details: Array.isArray(productData.details) ? productData.details : [],
-        isNew: Boolean(productData.isNew)
+        isNew: Boolean(productData.isNew),
+        isOffer: Boolean(productData.isOffer),
+        offerPrice: Number(productData.offerPrice || 0),
+        offerEndsInDays: Number(productData.offerEndsInDays || 0),
+        offerLabel: String(productData.offerLabel || '').trim()
       };
 
       const newProduct = await apiRequest('/products', {
@@ -1203,7 +1240,11 @@ function AppShell() {
         fabric: productData.fabric,
         images: Array.isArray(productData.images) ? productData.images : [],
         details: Array.isArray(productData.details) ? productData.details : [],
-        isNew: Boolean(productData.isNew)
+        isNew: Boolean(productData.isNew),
+        isOffer: Boolean(productData.isOffer),
+        offerPrice: Number(productData.offerPrice || 0),
+        offerEndsInDays: Number(productData.offerEndsInDays || 0),
+        offerLabel: String(productData.offerLabel || '').trim()
       };
 
       const updatedProduct = await apiRequest(`/products/${productData.id}`, {
@@ -1282,6 +1323,14 @@ function AppShell() {
     setSearchTerm((prev) => prev.trim());
   };
 
+  const toggleFavorite = (productId) => {
+    setFavorites((prev) => {
+      const exists = prev.includes(String(productId));
+      const next = exists ? prev.filter((id) => id !== String(productId)) : [...prev, String(productId)];
+      return next;
+    });
+  };
+
   const searchResults = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
 
@@ -1299,6 +1348,7 @@ function AppShell() {
   }, [products, searchTerm]);
 
   const storefrontProducts = searchResults;
+  const favoriteProducts = products.filter((product) => favorites.includes(String(product.id)));
 
   return (
     <div className="app-shell">
@@ -1350,6 +1400,9 @@ function AppShell() {
             categories={categories}
             newArrivals={newArrivals}
             currentUser={currentUser}
+            favorites={favoriteProducts}
+            favoriteIds={favorites}
+            onToggleFavorite={toggleFavorite}
             onAddToCart={handleAddToCart}
             onOpenDetails={handleOpenDetails}
             onRequestLogin={() => openAuth('login')}
@@ -1396,6 +1449,22 @@ function AppShell() {
         <Route path="/return-exchange-request">
           <ReturnExchangeRequestPage />
         </Route>
+        <Route exact path="/favorites">
+          {currentUser?.role === 'user' ? (
+            <FavoritesPage
+              favorites={favoriteProducts}
+              favoriteIds={favorites}
+              onToggleFavorite={toggleFavorite}
+              onOpenDetails={handleOpenDetails}
+              onRequestLogin={() => openAuth('login')}
+              getAverageRating={getAverageRating}
+              getRatingCount={getRatingCount}
+            />
+          ) : (
+            <Redirect to="/" />
+          )}
+        </Route>
+
         <Route exact path="/account">
           {currentUser?.role === 'user' ? (
             <UserAccountPage
@@ -1663,6 +1732,9 @@ function AppHeader({ currentUser, cartCount, themeMode, onThemeToggle, onCartTog
               <button type="button" className="user-menu-item" onClick={() => { history.push('/'); onCloseMenu(); }}>
                 Home
               </button>
+              <button type="button" className="user-menu-item" onClick={() => { history.push('/favorites'); onCloseMenu(); }}>
+                Favorites
+              </button>
               <button type="button" className="user-menu-item" onClick={() => { history.push('/account?tab=orders'); onCloseMenu(); }}>
                 Track Order
               </button>
@@ -1764,6 +1836,11 @@ function AppHeader({ currentUser, cartCount, themeMode, onThemeToggle, onCartTog
         <button type="button" className="link-button" onClick={() => scrollToSection('collections')}>
           Collections
         </button>
+        {currentUser?.role === 'user' ? (
+          <button type="button" className="link-button" onClick={() => history.push('/favorites')}>
+            Favorites
+          </button>
+        ) : null}
       </nav>
 
       <div className="header-actions">
@@ -2080,15 +2157,20 @@ function ResetPasswordPage({ currentUser, onRequestPasswordReset, onResetPasswor
   );
 }
 
-function HomePage({ products, categories, newArrivals, currentUser, onAddToCart, onOpenDetails, onRequestLogin, onRequestSignup, cart, onCheckout, onRemoveFromCart, getAverageRating, getRatingCount, heroImages, searchTerm, onSearchTermChange }) {
+function HomePage({ products, categories, newArrivals, currentUser, favorites = [], favoriteIds = [], onToggleFavorite, onAddToCart, onOpenDetails, onRequestLogin, onRequestSignup, cart, onCheckout, onRemoveFromCart, getAverageRating, getRatingCount, heroImages, searchTerm, onSearchTermChange }) {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [highlightedCategory, setHighlightedCategory] = useState('all');
   const heroRef = useRef(null);
   const collectionsRef = useRef(null);
   const scrollerRef = useRef(null);
   const allSareesRef = useRef(null);
+  const offersRef = useRef(null);
+
+  const offerProducts = products.filter((product) => product.isOffer);
+  const hasFavorites = currentUser?.role === 'user' && Array.isArray(favorites) && favorites.length > 0;
 
   useScrollReveal(heroRef, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+  useScrollReveal(offersRef, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
   useScrollReveal(collectionsRef, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
   useScrollReveal(scrollerRef, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
   useScrollReveal(allSareesRef, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
@@ -2174,6 +2256,29 @@ function HomePage({ products, categories, newArrivals, currentUser, onAddToCart,
         )}
       </section>
 
+      {hasFavorites ? (
+        <section className="favorites-summary reveal">
+          <div>
+            <p className="eyebrow">Saved for later</p>
+            <h2>{favorites.length} favorite {favorites.length === 1 ? 'saree' : 'sarees'}</h2>
+            <p>Quickly return to saved sarees and complete your booking.</p>
+          </div>
+          <Link className="primary-btn" to="/favorites">View Favorites</Link>
+        </section>
+      ) : null}
+
+      <div id="offers" ref={offersRef} className="reveal">
+        <SareeGrid
+          title="Limited Time Offers"
+          sarees={offerProducts}
+          onAdd={onAddToCart}
+          onOpenDetails={onOpenDetails}
+          onToggleFavorite={onToggleFavorite}
+          favoriteIds={favoriteIds}
+          getAverageRating={getAverageRating}
+          getRatingCount={getRatingCount}
+        />
+      </div>
 
       <div id="collections" ref={collectionsRef} className="reveal">
         <SareeGrid
@@ -2181,6 +2286,8 @@ function HomePage({ products, categories, newArrivals, currentUser, onAddToCart,
           sarees={newArrivals}
           onAdd={onAddToCart}
           onOpenDetails={onOpenDetails}
+          onToggleFavorite={onToggleFavorite}
+          favoriteIds={favoriteIds}
           getAverageRating={getAverageRating}
           getRatingCount={getRatingCount}
         />
@@ -2196,6 +2303,8 @@ function HomePage({ products, categories, newArrivals, currentUser, onAddToCart,
         sarees={priceFilteredCollections}
         onAdd={onAddToCart}
         onOpenDetails={onOpenDetails}
+        onToggleFavorite={onToggleFavorite}
+        favoriteIds={favoriteIds}
         getAverageRating={getAverageRating}
         getRatingCount={getRatingCount}
       />
@@ -2636,7 +2745,11 @@ function AdminPanelPage({ section = 'profile', products, currentUser, onUpdatePr
       category: normalizeCategoryName(productForm.category, products),
       fabric: productForm.fabric.trim(),
       price: Number(productForm.price || 0),
-      stock: Number(productForm.stock || 0)
+      stock: Number(productForm.stock || 0),
+      isOffer: Boolean(productForm.isOffer),
+      offerPrice: Number(productForm.offerPrice || 0),
+      offerEndsInDays: Number(productForm.offerEndsInDays || 0),
+      offerLabel: String(productForm.offerLabel || '').trim()
     };
 
     payload.image = payload.images[0] || FALLBACK_PRODUCT_IMAGE;
@@ -2673,7 +2786,11 @@ function AdminPanelPage({ section = 'profile', products, currentUser, onUpdatePr
       category: product.category || DEFAULT_NEW_PRODUCT.category,
       fabric: product.fabric || '',
       stock: String(product.stock ?? 0),
-      isNew: Boolean(product.isNew)
+      isNew: Boolean(product.isNew),
+      isOffer: Boolean(product.isOffer),
+      offerPrice: String(product.offerPrice || ''),
+      offerEndsInDays: String(product.offerEndsInDays || ''),
+      offerLabel: String(product.offerLabel || '')
     });
   };
 
@@ -3205,6 +3322,45 @@ function AdminPanelPage({ section = 'profile', products, currentUser, onUpdatePr
                     />
                     Mark as New Arrival
                   </label>
+                  <label className="collection-checkbox-row full-width">
+                    <input
+                      type="checkbox"
+                      checked={productForm.isOffer}
+                      onChange={(event) => setProductForm((prev) => ({ ...prev, isOffer: event.target.checked }))}
+                    />
+                    Mark as Offer Saree
+                  </label>
+                  {productForm.isOffer ? (
+                    <>
+                      <label>
+                        Offer Label
+                        <input
+                          type="text"
+                          value={productForm.offerLabel}
+                          onChange={(event) => setProductForm((prev) => ({ ...prev, offerLabel: event.target.value }))}
+                          placeholder="Flash Sale, End of Season, 20% OFF"
+                        />
+                      </label>
+                      <label>
+                        Offer Price
+                        <input
+                          type="number"
+                          min="0"
+                          value={productForm.offerPrice}
+                          onChange={(event) => setProductForm((prev) => ({ ...prev, offerPrice: event.target.value }))}
+                        />
+                      </label>
+                      <label>
+                        Ends in Days
+                        <input
+                          type="number"
+                          min="0"
+                          value={productForm.offerEndsInDays}
+                          onChange={(event) => setProductForm((prev) => ({ ...prev, offerEndsInDays: event.target.value }))}
+                        />
+                      </label>
+                    </>
+                  ) : null}
                 </div>
 
                 <div className="collection-form-actions">
@@ -3753,6 +3909,55 @@ function UserAccountPage({ currentUser, bookings, products, onUpdateProfile, onC
         </div>
       </div>
     </section>
+  );
+}
+
+function FavoritesPage({ favorites, favoriteIds, onToggleFavorite, onOpenDetails, onRequestLogin, getAverageRating, getRatingCount }) {
+  return (
+    <main className="favorites-page">
+      <div className="favorites-hero">
+        <div>
+          <p className="eyebrow">Favorites</p>
+          <h1>Your saved sarees</h1>
+          <p>Browse the items you loved and book them with one tap.</p>
+        </div>
+        <Link className="primary-btn" to="/">Back to Store</Link>
+      </div>
+
+      {favorites.length === 0 ? (
+        <div className="empty-state favorites-empty">
+          <p>No favorites yet.</p>
+          <p className="text-muted">Tap the heart icon on any saree to save it here.</p>
+          <Link className="primary-btn" to="/">Browse Sarees</Link>
+        </div>
+      ) : (
+        <div className="favorites-grid">
+          {favorites.map((product) => (
+            <div key={product.id} className="favorites-card">
+              <img src={product.image} alt={product.name} onError={(event) => { event.currentTarget.src = FALLBACK_PRODUCT_IMAGE; }} />
+              <div className="favorites-copy">
+                <h3>{product.name}</h3>
+                <p>{product.description}</p>
+                <div className="favorites-meta">
+                  <span>₹{product.price.toLocaleString()}</span>
+                  <button
+                    type="button"
+                    className={`icon-action-btn ${favoriteIds.includes(String(product.id)) ? 'active' : ''}`}
+                    title={favoriteIds.includes(String(product.id)) ? 'Remove from favorites' : 'Add to favorites'}
+                    onClick={() => onToggleFavorite(product.id)}
+                  >
+                    <i className={favoriteIds.includes(String(product.id)) ? 'fas fa-heart' : 'far fa-heart'} aria-hidden="true" />
+                  </button>
+                </div>
+                <div className="favorites-actions">
+                  <button className="ghost-btn" type="button" onClick={() => onOpenDetails(product)}>View</button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </main>
   );
 }
 

@@ -46,12 +46,102 @@ body.theme-dark .saree-card:hover {
   text-transform: uppercase;
 }
 
+/* Shift new-badge when an offer-flag is present so both are visible */
+.saree-image-container .offer-flag + .new-badge,
+.saree-image-container .new-badge.offer-shift {
+  left: 84px; /* move right to avoid overlap with offer flag */
+}
+
 .saree-image-container {
   position: relative;
   aspect-ratio: 4 / 5;
   min-height: 260px;
   overflow: hidden;
   background: linear-gradient(180deg, rgba(255,255,255,0.4), rgba(191,135,67,0.08));
+}
+
+.offer-badge,
+.new-badge {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.55rem 0.9rem;
+  border-radius: var(--radius-pill);
+  background: rgba(34, 40, 53, 0.9);
+  color: #fffdf8;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  animation: badgePulse 0.35s ease both;
+}
+
+.offer-badge {
+  background: linear-gradient(135deg, #f8c630, #d48207);
+  color: #111111;
+}
+
+/* New red offer flag */
+.offer-flag {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 3;
+  background: #d64545;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.45);
+  font-size: 0.75rem;
+}
+
+.saree-image-container .favorite-button {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.8);
+  background: rgba(255,255,255,0.85);
+  color: #e14b6a;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.saree-image-container .favorite-button:hover {
+  transform: scale(1.05);
+  background: #ffffff;
+}
+
+.saree-image-container .favorite-button .fas {
+  color: #e14b6a;
+}
+
+.offer-price-block {
+  display: flex;
+  align-items: baseline;
+  gap: 0.65rem;
+}
+
+.offer-price-block .saree-price {
+  color: #d75234;
+}
+
+.original-price {
+  color: rgba(17, 19, 26, 0.7);
+  font-size: 0.9rem;
+  text-decoration: line-through;
 }
 
 body.theme-dark .saree-image-container {
@@ -226,11 +316,38 @@ body.theme-dark .add-to-cart-button {
     font-size: 20px;
   }
   .add-to-cart-button {
-    padding: 8px 14px;
-    font-size: 10px;
   }
+
 }
 
+.original-price {
+  color: var(--muted-text);
+  text-decoration: line-through;
+  margin-left: 0.75rem;
+  font-weight: 600;
+}
+
+.offer-price {
+  color: var(--accent-color);
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.mrp {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted-text);
+  margin-top: 0.15rem;
+}
+
+.offer-label {
+  background: linear-gradient(90deg,#ff6b6b,#ff3b3b);
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  margin-left: 0.5rem;
+}
 @media (max-width: 480px) {
   .saree-image-container {
     height: 200px;
@@ -246,3 +363,19 @@ body.theme-dark .add-to-cart-button {
     font-size: 12px;
   }
 }
+
+/* Dark theme overrides for favorite button */
+body.theme-dark .saree-image-container .favorite-button {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.12);
+  color: #ffd27a;
+}
+
+body.theme-dark .saree-image-container .favorite-button:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+body.theme-dark .saree-image-container .favorite-button .fas {
+  color: #ffd27a;
+}
+
