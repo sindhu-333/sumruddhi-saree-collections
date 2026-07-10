@@ -643,21 +643,65 @@ function AppShell() {
     return () => window.clearTimeout(timeout);
   }, [notice]);
 
+  // Fetch products from API on mount
   useEffect(() => {
     let cancelled = false;
-    apiRequest('/products')
-      .then((items) => {
+    const fetchProducts = async () => {
+      try {
+        const items = await apiRequest('/products');
         if (!cancelled && Array.isArray(items) && items.length) {
           setProducts(items.map((product, index) => normalizeProduct({
             ...product,
             isNew: product.is_new
           }, index + 1)));
         }
-      })
-      .catch(() => {
+      } catch (err) {
         // Keep local fallback data when API is not available.
-      });
+        console.debug('[PRODUCTS_FETCH_FAIL]', err?.message);
+      }
+    };
 
+    fetchProducts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Refetch products when user logs in (currentUser changes from falsy to truthy)
+  const prevUserRef = React.useRef(null);
+  useEffect(() => {
+    const wasLoggedOut = !prevUserRef.current;
+    const isNowLoggedIn = !!currentUser;
+    const hasUserChanged = prevUserRef.current?.id !== currentUser?.id;
+
+    if ((wasLoggedOut && isNowLoggedIn) || hasUserChanged) {
+      let cancelled = false;
+      const fetchProducts = async () => {
+        try {
+          const items = await apiRequest('/products');
+          if (!cancelled && Array.isArray(items) && items.length) {
+            setProducts(items.map((product, index) => normalizeProduct({
+              ...product,
+              isNew: product.is_new
+            }, index + 1)));
+          }
+        } catch (err) {
+          console.debug('[PRODUCTS_REFETCH_FAIL]', err?.message);
+        }
+      };
+
+      fetchProducts();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    prevUserRef.current = currentUser;
+  }, [currentUser]);
+
+  useEffect(() => {
+    let cancelled = false;
     apiRequest('/ratings')
       .then((items) => {
         if (!cancelled && Array.isArray(items)) {
@@ -2413,16 +2457,33 @@ function SareeDetailPage({ products, currentUser, onBack, onAddToCart, onBookPro
           ) : null}
           <div className="detail-mini-row">
             <div className="detail-mini-card">{product.category}</div>
-            <div className="detail-mini-card">₹{product.price.toLocaleString()}</div>
+            <div className="detail-mini-card">
+              {product.isOffer ? (
+                <>
+                  <div className="detail-offer-price">₹{(Number(product.offerPrice) || 0).toLocaleString()}</div>
+                  <div className="detail-original-price">₹{product.price.toLocaleString()}</div>
+                </>
+              ) : (
+                `₹${product.price.toLocaleString()}`
+              )}
+            </div>
             {getAverageRating(product.id) > 0 && <div className="detail-mini-card">★ {getAverageRating(product.id).toFixed(1)} ({getRatingCount(product.id)} ratings)</div>}
           </div>
         </div>
 
         <div className="detail-summary">
           {product.isNew ? <span className="detail-badge">New Arrival</span> : null}
+          {product.isOffer ? <span className="detail-badge offer-badge">Offer: {product.offerLabel}</span> : null}
           <h1 className="detail-title">{product.name}</h1>
           <p className="detail-subtitle">{product.description}</p>
-          <div className="detail-price">₹{product.price.toLocaleString()}</div>
+          {product.isOffer ? (
+            <div className="detail-price-block">
+              <div className="detail-price-offer">₹{(Number(product.offerPrice) || 0).toLocaleString()}</div>
+              <div className="detail-price-original">M.R.P.: ₹{product.price.toLocaleString()}</div>
+            </div>
+          ) : (
+            <div className="detail-price">₹{product.price.toLocaleString()}</div>
+          )}
 
           <div className="detail-meta-grid">
             <div><span>Fabric</span><strong>{product.fabric}</strong></div>

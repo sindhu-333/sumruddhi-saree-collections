@@ -2535,6 +2535,50 @@ body.theme-dark .filter-summary span {
   color: var(--accent-light);
   margin-bottom: 28px;
 }
+
+.detail-price-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 28px;
+}
+
+.detail-price-offer {
+  font-family: var(--font-display);
+  font-size: 2.4rem;
+  font-weight: 800;
+  color: #ff6b6b;
+  line-height: 1.1;
+}
+
+.detail-price-original {
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.72);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.detail-mini-card .detail-offer-price {
+  font-weight: 800;
+  color: #ff6b6b;
+  font-size: 1.1rem;
+}
+
+.detail-mini-card .detail-original-price {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.7);
+  text-decoration: line-through;
+  margin-top: 2px;
+}
+
+.detail-badge.offer-badge {
+  background: linear-gradient(135deg, #ff6b6b, #ff3b3b);
+  color: white;
+  margin-left: 8px;
+  margin-bottom: 8px;
+}
+
 .detail-meta-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
