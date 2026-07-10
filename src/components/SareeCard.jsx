@@ -9,6 +9,7 @@ const SareeCard = ({ saree, onAdd, onOpenDetails, onToggleFavorite, isFavorite =
     };
 
     const handleAddClick = () => {
+        if (saree.stock === 0) return;
         onAdd?.(saree);
         setIsAdded(true);
         setTimeout(() => setIsAdded(false), 600);
@@ -22,8 +23,11 @@ const SareeCard = ({ saree, onAdd, onOpenDetails, onToggleFavorite, isFavorite =
                         {isOffer ? (
                             <span className="offer-flag" aria-hidden="true">Offer</span>
                         ) : null}
+                        {saree.stock === 0 ? (
+                            <span className="out-flag" aria-hidden="true">Out</span>
+                        ) : null}
                         {isNew ? (
-                            <span className={`new-badge ${isOffer ? 'offer-shift' : ''}`}><i className="fas fa-star"></i> New</span>
+                            <span className={`new-badge ${(isOffer || saree.stock === 0) ? 'offer-shift' : ''}`}><i className="fas fa-star"></i> New</span>
                         ) : null}
             <div className="saree-image-container">
                 <img src={saree.image} alt={saree.name} className="saree-image" onError={handleImageError} />
@@ -55,7 +59,9 @@ const SareeCard = ({ saree, onAdd, onOpenDetails, onToggleFavorite, isFavorite =
                     </div>
                 )}
                 <div className="saree-footer">
-                                        {isOffer ? (
+                                        {saree.stock === 0 ? (
+                                            <span className="out-of-stock-badge">Out of stock</span>
+                                        ) : isOffer ? (
                                             <div className="offer-price-block">
                                                 <div className="offer-price">₹{(Number(offerPrice) || 0).toLocaleString()}</div>
                                                 <div className="mrp">M.R.P.: <span className="original-price">₹{saree.price.toLocaleString()}</span></div>
@@ -69,8 +75,9 @@ const SareeCard = ({ saree, onAdd, onOpenDetails, onToggleFavorite, isFavorite =
                             event.stopPropagation();
                             handleAddClick();
                         }}
-                        className={`add-to-cart-button ${isAdded ? 'added' : ''}`}
-                        title={isAdded ? 'Added to cart' : 'Add to cart'}
+                        className={`add-to-cart-button ${isAdded ? 'added' : ''} ${saree.stock === 0 ? 'disabled' : ''}`}
+                        title={saree.stock === 0 ? 'Out of stock' : (isAdded ? 'Added to cart' : 'Add to cart')}
+                        disabled={saree.stock === 0}
                     >
                         {isAdded ? (
                             <>

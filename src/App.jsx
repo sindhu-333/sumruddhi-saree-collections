@@ -373,6 +373,7 @@ function normalizeProduct(product, fallbackId) {
     description: product.description || 'Elegant saree collection piece.',
     category: product.category || 'Silk',
     fabric: product.fabric || product.category || 'Premium blend',
+    stock: Number(product.stock || 0),
     rating: 0,
     ratingCount: 0,
     colors: product.colors || ['Ivory', 'Gold'],
@@ -2485,8 +2486,20 @@ function SareeDetailPage({ products, currentUser, onBack, onAddToCart, onBookPro
           </div>
 
           <div className="detail-actions">
-            <button className="primary-btn" onClick={() => onAddToCart(product)}>Add to Cart</button>
-            <button className="ghost-btn" onClick={() => onBookProduct(product)}>Book Now</button>
+            <button
+              className={`primary-btn ${product.stock === 0 ? 'disabled' : ''}`}
+              onClick={() => onAddToCart(product)}
+              disabled={product.stock === 0}
+            >
+              {product.stock === 0 ? 'Out of stock' : 'Add to Cart'}
+            </button>
+            <button
+              className={`ghost-btn ${product.stock === 0 ? 'disabled' : ''}`}
+              onClick={() => onBookProduct(product)}
+              disabled={product.stock === 0}
+            >
+              {product.stock === 0 ? 'Out of stock' : 'Book Now'}
+            </button>
             <button
               type="button"
               className="icon-action-btn"
@@ -2569,6 +2582,7 @@ function AdminPanelPage({ section = 'profile', products, currentUser, onUpdatePr
   const dashboardLabel = isStaffUser ? 'Staff dashboard' : 'Admin dashboard';
   const roleLabel = isStaffUser ? 'Staff' : 'Administrator';
   const accessLabel = isStaffUser ? 'Order management' : 'Store management';
+
   const [profileForm, setProfileForm] = useState({
     name: currentUser.name || '',
     email: currentUser.email || '',
@@ -2854,22 +2868,30 @@ function AdminPanelPage({ section = 'profile', products, currentUser, onUpdatePr
     <section className="admin-page">
       <div className="admin-hero">
         <div className="admin-hero-copy">
-            <p className="eyebrow">{dashboardLabel}</p>
+        {section === 'orders' ? (
           <h1>{active.title}</h1>
-          <p>{active.description} Signed in as {currentUser.name}.</p>
-          <div className="admin-hero-meta">
-            <span className="admin-meta-pill">Live catalog</span>
-            <span className="admin-meta-pill">Secure session</span>
+        ) : (
+          <>
+            <p className="eyebrow">{dashboardLabel}</p>
+            <h1>{active.title}</h1>
+            <p>{active.description} Signed in as {currentUser.name}.</p>
+            <div className="admin-hero-meta">
+              <span className="admin-meta-pill">Live catalog</span>
+              <span className="admin-meta-pill">Secure session</span>
               <span className="admin-meta-pill">{isStaffUser ? 'Shipment updates' : 'Owner verification'}</span>
-          </div>
-        </div>
-        <div className="admin-hero-actions">
+            </div>
+          </>
+        )}
+      </div>
+      <div className="admin-hero-actions">
+        {section !== 'orders' ? (
           <div className="admin-hero-badge">
-              <span className="admin-hero-badge-label">Active {isStaffUser ? 'staff' : 'admin'}</span>
+            <span className="admin-hero-badge-label">Active {isStaffUser ? 'staff' : 'admin'}</span>
             <strong>{currentUser.name}</strong>
           </div>
-          <Link className="primary-btn" to="/">Back to Store</Link>
-        </div>
+        ) : null}
+        <Link className="primary-btn" to="/">Back to Store</Link>
+      </div>
       </div>
 
       <div className="admin-content">
