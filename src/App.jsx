@@ -650,10 +650,7 @@ function AppShell() {
       try {
         const items = await apiRequest('/products');
         if (!cancelled && Array.isArray(items) && items.length) {
-          setProducts(items.map((product, index) => normalizeProduct({
-            ...product,
-            isNew: product.is_new
-          }, index + 1)));
+          setProducts(items.map((product, index) => normalizeProduct(product, index + 1)));
         }
       } catch (err) {
         // Keep local fallback data when API is not available.
@@ -681,10 +678,7 @@ function AppShell() {
         try {
           const items = await apiRequest('/products');
           if (!cancelled && Array.isArray(items) && items.length) {
-            setProducts(items.map((product, index) => normalizeProduct({
-              ...product,
-              isNew: product.is_new
-            }, index + 1)));
+            setProducts(items.map((product, index) => normalizeProduct(product, index + 1)));
           }
         } catch (err) {
           console.debug('[PRODUCTS_REFETCH_FAIL]', err?.message);
@@ -2807,6 +2801,7 @@ function AdminPanelPage({ section = 'profile', products, currentUser, onUpdatePr
       fabric: productForm.fabric.trim(),
       price: Number(productForm.price || 0),
       stock: Number(productForm.stock || 0),
+      isNew: Boolean(productForm.isNew),
       isOffer: Boolean(productForm.isOffer),
       offerPrice: Number(productForm.offerPrice || 0),
       offerEndsInDays: Number(productForm.offerEndsInDays || 0),
